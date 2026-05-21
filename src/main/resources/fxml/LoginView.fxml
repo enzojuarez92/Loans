@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<!--
+    LoginView.fxml
+    Controlador: com.edj.developer.apploans.controller.LoginController
+
+    Layout:
+      BorderPane (root: panel izquierdo de marca + panel derecho de formulario)
+       ├─ LEFT  → VBox  (brand-panel: logo, eslogan, features)
+       └─ RIGHT → VBox  (form-panel: formulario de acceso)
+-->
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.edj.developer.apploans.controller.LoginController"
+            styleClass="login-root"
+            prefWidth="860"
+            prefHeight="540">
+
+    <!-- ═══════════════════════════════════════
+         PANEL IZQUIERDO — Marca / Branding
+    ════════════════════════════════════════ -->
+    <left>
+        <VBox styleClass="brand-panel"
+              alignment="CENTER"
+              spacing="0"
+              prefWidth="380">
+
+            <!-- Logo y nombre -->
+            <VBox alignment="CENTER" spacing="10" styleClass="brand-logo-block">
+                <HBox alignment="CENTER" spacing="14">
+                    <StackPane styleClass="brand-icon-wrap">
+                        <FontIcon iconLiteral="fas-hand-holding-usd"
+                                  iconSize="36"
+                                  iconColor="white"/>
+                    </StackPane>
+                    <VBox alignment="CENTER_LEFT" spacing="0">
+                        <Label text="App" styleClass="brand-name-thin"/>
+                        <Label text="Loans" styleClass="brand-name-bold"/>
+                    </VBox>
+                </HBox>
+                <Label text="Sistema de Gestión de Préstamos"
+                       styleClass="brand-tagline"/>
+            </VBox>
+
+            <!-- Separador decorativo -->
+            <Region prefHeight="40"/>
+            <Separator styleClass="brand-divider" maxWidth="200"/>
+            <Region prefHeight="32"/>
+
+            <!-- Features / highlights -->
+            <VBox spacing="20" styleClass="brand-features" alignment="CENTER_LEFT"
+                  maxWidth="260">
+
+                <HBox spacing="16" alignment="CENTER_LEFT">
+                    <StackPane styleClass="feature-icon-wrap">
+                        <FontIcon iconLiteral="fas-users"
+                                  iconSize="16" iconColor="white"/>
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="Gestión de Clientes"
+                               styleClass="feature-title"/>
+                        <Label text="Registro y seguimiento completo"
+                               styleClass="feature-desc"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="16" alignment="CENTER_LEFT">
+                    <StackPane styleClass="feature-icon-wrap">
+                        <FontIcon iconLiteral="fas-file-invoice-dollar"
+                                  iconSize="16" iconColor="white"/>
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="Préstamos y Cuotas"
+                               styleClass="feature-title"/>
+                        <Label text="Cálculo automático de amortización"
+                               styleClass="feature-desc"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="16" alignment="CENTER_LEFT">
+                    <StackPane styleClass="feature-icon-wrap">
+                        <FontIcon iconLiteral="fas-chart-line"
+                                  iconSize="16" iconColor="white"/>
+                    </StackPane>
+                    <VBox spacing="2">
+                        <Label text="Reportes y Cobros"
+                               styleClass="feature-title"/>
+                        <Label text="Seguimiento de pagos en tiempo real"
+                               styleClass="feature-desc"/>
+                    </VBox>
+                </HBox>
+
+            </VBox>
+
+            <!-- Footer versión -->
+            <Region VBox.vgrow="ALWAYS"/>
+            <Label text="v1.0.0 — © 2025 AppLoans"
+                   styleClass="brand-version"/>
+
+        </VBox>
+    </left>
+
+    <!-- ═══════════════════════════════════════
+         PANEL DERECHO — Formulario de acceso
+    ════════════════════════════════════════ -->
+    <center>
+        <VBox styleClass="form-panel"
+              alignment="CENTER"
+              spacing="0">
+
+            <!-- Encabezado del formulario -->
+            <VBox spacing="6" styleClass="login-form-header">
+                <Label text="Iniciar Sesión" styleClass="login-title"/>
+                <Label text="Ingresá tus credenciales para continuar"
+                       styleClass="login-subtitle"/>
+            </VBox>
+
+            <Region prefHeight="32"/>
+
+            <!-- ── Alert de error (oculto por defecto) ── -->
+            <HBox fx:id="pnlError"
+                  styleClass="login-alert-error"
+                  spacing="10"
+                  alignment="CENTER_LEFT"
+                  visible="false"
+                  managed="false">
+                <FontIcon iconLiteral="fas-exclamation-circle"
+                          iconSize="15" iconColor="#DC3545"/>
+                <Label fx:id="lblError"
+                       text="Usuario o contraseña incorrectos."
+                       styleClass="login-error-text"
+                       wrapText="true"
+                       HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+            <Region fx:id="errorSpacer" prefHeight="0" managed="false"/>
+
+            <!-- ── Campos del formulario ── -->
+            <VBox spacing="20" styleClass="login-fields">
+
+                <!-- Usuario -->
+                <VBox spacing="6">
+                    <Label text="Usuario" styleClass="form-label"/>
+                    <HBox styleClass="input-icon-wrap" alignment="CENTER_LEFT" spacing="0">
+                        <StackPane styleClass="input-icon-box">
+                            <FontIcon iconLiteral="fas-user"
+                                      iconSize="14" iconColor="#ADB5BD"/>
+                        </StackPane>
+                        <TextField fx:id="txtUsername"
+                                   promptText="Ingresá tu usuario"
+                                   styleClass="form-control input-with-icon"
+                                   HBox.hgrow="ALWAYS"
+                                   onAction="#handleLogin"/>
+                    </HBox>
+                    <Label fx:id="errUsername"
+                           styleClass="field-error"
+                           visible="false" managed="false"/>
+                </VBox>
+
+                <!-- Contraseña -->
+                <VBox spacing="6">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Contraseña" styleClass="form-label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label text="¿Olvidaste tu contraseña?"
+                               styleClass="forgot-link"/>
+                    </HBox>
+                    <HBox styleClass="input-icon-wrap" alignment="CENTER_LEFT" spacing="0">
+                        <StackPane styleClass="input-icon-box">
+                            <FontIcon iconLiteral="fas-lock"
+                                      iconSize="14" iconColor="#ADB5BD"/>
+                        </StackPane>
+                        <PasswordField fx:id="txtPassword"
+                                       promptText="Ingresá tu contraseña"
+                                       styleClass="form-control input-with-icon"
+                                       HBox.hgrow="ALWAYS"
+                                       onAction="#handleLogin"/>
+                    </HBox>
+                    <Label fx:id="errPassword"
+                           styleClass="field-error"
+                           visible="false" managed="false"/>
+                </VBox>
+
+            </VBox>
+
+            <Region prefHeight="28"/>
+
+            <!-- ── Botón de ingreso ── -->
+            <Button fx:id="btnLogin"
+                    text="Ingresar al Sistema"
+                    styleClass="btn btn-primary btn-login"
+                    onAction="#handleLogin"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity"
+                    defaultButton="true">
+                <graphic>
+                    <FontIcon fx:id="loginIcon"
+                              iconLiteral="fas-sign-in-alt"
+                              iconSize="15"
+                              iconColor="white"/>
+                </graphic>
+            </Button>
+
+            <Region prefHeight="20"/>
+
+            <!-- ── Credenciales de demo ── -->
+            <HBox alignment="CENTER" spacing="6">
+                <FontIcon iconLiteral="fas-info-circle"
+                          iconSize="12" iconColor="#ADB5BD"/>
+                <Label text="Demo: admin / admin123"
+                       styleClass="demo-hint"/>
+            </HBox>
+
+            <!-- Footer -->
+            <Region VBox.vgrow="ALWAYS"/>
+            <Label text="AppLoans © 2025 — Todos los derechos reservados"
+                   styleClass="form-footer-text"/>
+
+        </VBox>
+    </center>
+
+</BorderPane>

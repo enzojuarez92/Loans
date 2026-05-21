@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.edj.developer.apploans.controller.CustomerFormController"
+      styleClass="modal-root"
+      spacing="0"
+      minWidth="680"
+      maxWidth="680"
+      prefHeight="700">
+
+    <HBox styleClass="modal-header" alignment="CENTER_LEFT" spacing="12">
+        <FontIcon fx:id="headerIcon"
+                  iconLiteral="fas-user-plus"
+                  iconSize="20"
+                  iconColor="#25467E"/>
+        <VBox spacing="2">
+            <Label fx:id="lblModalTitle"
+                   text="Nuevo Cliente"
+                   styleClass="modal-title"/>
+            <Label fx:id="lblModalSubtitle"
+                   text="Complete los campos requeridos para registrar un nuevo cliente"
+                   styleClass="modal-subtitle"/>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label fx:id="lblModeBadge"
+               text="CREAR"
+               styleClass="badge badge-primary"/>
+    </HBox>
+
+    <ScrollPane fitToWidth="true"
+                hbarPolicy="NEVER"
+                vbarPolicy="AS_NEEDED"
+                styleClass="form-scroll"
+                VBox.vgrow="ALWAYS">
+
+        <VBox spacing="24" styleClass="form-body">
+
+            <VBox spacing="14">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <FontIcon iconLiteral="fas-id-card"
+                              iconSize="13" iconColor="#6C757D"/>
+                    <Label text="IDENTIDAD" styleClass="form-section-label"/>
+                    <Separator HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <HBox spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="N° de Documento" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
+                        <TextField fx:id="txtDocNumber"
+                                   promptText="ej. 11222333"
+                                   styleClass="form-control"
+                                   maxWidth="Infinity"/>
+                        <Label fx:id="errDocNumber" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="Nombre" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
+                        <TextField fx:id="txtFirstName"
+                                   promptText="ej. Juan"
+                                   styleClass="form-control"
+                                   maxWidth="Infinity"/>
+                        <Label fx:id="errFirstName" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="Apellido" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
+                        <TextField fx:id="txtLastName"
+                                   promptText="ej. Perez"
+                                   styleClass="form-control"
+                                   maxWidth="Infinity"/>
+                        <Label fx:id="errLastName" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="16">
+                    <VBox spacing="4" prefWidth="220">
+                        <Label text="Fecha de Nacimiento" styleClass="form-label"/>
+                        <DatePicker fx:id="dpBirthDate"
+                                    promptText="dd/mm/aaaa"
+                                    styleClass="form-control"
+                                    maxWidth="Infinity"/>
+                        <Label fx:id="errBirthDate" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" prefWidth="180">
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="Estado" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
+                        <ComboBox fx:id="cmbStatus"
+                                  maxWidth="Infinity"
+                                  styleClass="form-control"/>
+                        <Label fx:id="errStatus" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+            </VBox>
+
+            <VBox spacing="14">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <FontIcon iconLiteral="fas-address-book"
+                              iconSize="13" iconColor="#6C757D"/>
+                    <Label text="INFORMACIÓN DE CONTACTO" styleClass="form-section-label"/>
+                    <Separator HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <HBox spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Teléfono / Celular" styleClass="form-label"/>
+                        <HBox spacing="0">
+                            <Label text="+54" styleClass="input-prefix"/>
+                            <TextField fx:id="txtPhone"
+                                       promptText="381 4321123"
+                                       styleClass="form-control input-with-prefix"
+                                       HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <Label fx:id="errPhone" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Correo Electrónico" styleClass="form-label"/>
+                        <TextField fx:id="txtEmail"
+                                   promptText="ejemplo@correo.com"
+                                   styleClass="form-control"
+                                   maxWidth="Infinity"/>
+                        <Label fx:id="errEmail" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+                </HBox>
+
+                <HBox spacing="16">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Dirección" styleClass="form-label"/>
+                        <TextField fx:id="txtAddress"
+                                   promptText="Calle, Número, Piso/Dpto"
+                                   styleClass="form-control"
+                                   maxWidth="Infinity"/>
+                        <Label fx:id="errAddress" styleClass="field-error" visible="false"
+                               managed="false"/>
+                    </VBox>
+
+                    <VBox spacing="4" prefWidth="200">
+                        <Label text="Ciudad" styleClass="form-label"/>
+                        <TextField fx:id="txtCity"
+                                   promptText="ej. San Miguel de Tucumán"
+                                   styleClass="form-control"
+                                   maxWidth="Infinity"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <VBox spacing="14">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <FontIcon iconLiteral="fas-sticky-note"
+                              iconSize="13" iconColor="#6C757D"/>
+                    <Label text="NOTAS ADICIONALES" styleClass="form-section-label"/>
+                    <Separator HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <VBox spacing="4">
+                    <TextArea fx:id="txtNotes"
+                              promptText="Cualquier información relevante sobre este cliente..."
+                              styleClass="form-control form-textarea"
+                              prefRowCount="3"
+                              wrapText="true"
+                              maxWidth="Infinity"/>
+                    <Label styleClass="field-hint"
+                           text="Opcional. Máx. 500 caracteres."/>
+                </VBox>
+            </VBox>
+
+            <HBox fx:id="pnlGlobalError"
+                  styleClass="alert-box alert-danger"
+                  spacing="10"
+                  alignment="CENTER_LEFT"
+                  visible="false"
+                  managed="false">
+                <FontIcon iconLiteral="fas-exclamation-triangle"
+                          iconSize="14" iconColor="#DC3545"/>
+                <Label fx:id="lblGlobalError"
+                       text="Por favor, corrija los errores marcados antes de guardar."
+                       styleClass="text-danger"
+                       wrapText="true"
+                       HBox.hgrow="ALWAYS"/>
+            </HBox>
+
+        </VBox>
+    </ScrollPane>
+
+    <HBox styleClass="modal-footer" spacing="10" alignment="CENTER_RIGHT">
+
+        <HBox spacing="4" alignment="CENTER_LEFT" HBox.hgrow="ALWAYS">
+            <Label text="*" styleClass="required-mark"/>
+            <Label text="Campos obligatorios" styleClass="text-muted text-sm"/>
+        </HBox>
+
+        <Button fx:id="btnCancel"
+                text="Cancelar"
+                styleClass="btn btn-secondary"
+                onAction="#handleCancel"
+                mnemonicParsing="false">
+            <graphic>
+                <FontIcon iconLiteral="fas-times" iconSize="13" iconColor="#495057"/>
+            </graphic>
+        </Button>
+
+        <Button fx:id="btnSave"
+                text="Guardar Cliente"
+                styleClass="btn btn-primary"
+                onAction="#handleSave"
+                mnemonicParsing="false"
+                defaultButton="true">
+            <graphic>
+                <FontIcon fx:id="btnSaveIcon"
+                          iconLiteral="fas-save"
+                          iconSize="13"
+                          iconColor="white"/>
+            </graphic>
+        </Button>
+
+    </HBox>
+
+</VBox>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.chart.AreaChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<ScrollPane fitToWidth="true" styleClass="edge-to-edge" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.edj.developer.apploans.controller.DashboardController">
+    <VBox spacing="25" style="-fx-padding: 25;">
+
+        <Label text="Resumen General" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+
+        <HBox spacing="20">
+            <VBox styleClass="stat-card,stat-card-primary" HBox.hgrow="ALWAYS">
+                <Label text="CAPITAL EN LA CALLE" styleClass="stat-label"/>
+                <Label fx:id="lblTotalOut" text="0.00" styleClass="stat-value"/>
+            </VBox>
+            <VBox styleClass="stat-card,stat-card-success" HBox.hgrow="ALWAYS">
+                <Label text="TOTAL RECUPERADO" styleClass="stat-label"/>
+                <Label fx:id="lblTotalIn" text="0.00" styleClass="stat-value"/>
+            </VBox>
+            <VBox styleClass="stat-card,stat-card-info" HBox.hgrow="ALWAYS">
+                <Label text="PRÉSTAMOS ACTIVOS" styleClass="stat-label"/>
+                <Label fx:id="lblActiveLoans" text="0" styleClass="stat-value"/>
+            </VBox>
+            <VBox styleClass="stat-card,stat-card-danger" HBox.hgrow="ALWAYS">
+                <Label text="CLIENTES MOROSOS" styleClass="stat-label"/>
+                <Label fx:id="lblMorosos" text="0" styleClass="stat-value"/>
+            </VBox>
+        </HBox>
+
+        <HBox spacing="20" VBox.vgrow="ALWAYS">
+            <VBox styleClass="card" HBox.hgrow="ALWAYS">
+                <Label text="Rendimiento Mensual" styleClass="card-title" style="-fx-padding: 15;"/>
+                <AreaChart fx:id="chartPerformance" prefHeight="300">
+                    <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
+                    <yAxis><NumberAxis side="LEFT" /></yAxis>
+                </AreaChart>
+            </VBox>
+        </HBox>
+
+    </VBox>
+</ScrollPane>

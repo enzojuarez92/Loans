@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<!--
+    MainView.fxml
+    Controlador: com.edj.developer.apploans.controller.MainController
+
+    Layout principal:
+      BorderPane
+       ├─ LEFT   → VBox  (sidebar: logo + nav + footer de usuario)
+       └─ CENTER → StackPane (content-area: aquí se inyectan las sub-vistas)
+
+    Las sub-vistas se cargan dinámicamente desde MainController
+    al hacer clic en cada ítem del menú lateral.
+-->
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.edj.developer.apploans.controller.MainController"
+            styleClass="app-root">
+
+    <!-- ═══════════════════════════════════════
+         SIDEBAR — Menú lateral
+    ════════════════════════════════════════ -->
+    <left>
+        <VBox styleClass="sidebar" spacing="0">
+
+            <!-- ── Logo / Marca ── -->
+            <VBox styleClass="sidebar-header" spacing="4" alignment="CENTER_LEFT">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <StackPane styleClass="sidebar-logo-icon">
+                        <FontIcon iconLiteral="fas-hand-holding-usd"
+                                  iconSize="22" iconColor="white"/>
+                    </StackPane>
+                    <VBox spacing="0">
+                        <Label text="AppLoans" styleClass="sidebar-logo-text"/>
+                        <Label text="GESTIÓN DE PRÉSTAMOS" styleClass="sidebar-subtitle"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <!-- ── Separador ── -->
+            <Region prefHeight="8"/>
+
+            <!-- ── Sección: Principal ── -->
+            <Label text="PRINCIPAL" styleClass="nav-section-label"/>
+
+            <Button fx:id="btnDashboard"
+                    text="Dashboard"
+                    styleClass="nav-item"
+                    onAction="#handleNavDashboard"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-tachometer-alt"
+                              iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
+            <!-- ── Sección: Gestión ── -->
+            <Region prefHeight="4"/>
+            <Label text="GESTIÓN" styleClass="nav-section-label"/>
+
+            <Button fx:id="btnClientes"
+                    text="Clientes"
+                    styleClass="nav-item"
+                    onAction="#handleNavClientes"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-users"
+                              iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
+            <Button fx:id="btnPrestamos"
+                    text="Préstamos"
+                    styleClass="nav-item"
+                    onAction="#handleNavPrestamos"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-file-invoice-dollar"
+                              iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
+            <Button fx:id="btnReportes"
+                    text="Reportes"
+                    styleClass="nav-item"
+                    onAction="#handleNavReportes"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-chart-bar" iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
+            <!-- ── Sección: Sistema ── -->
+            <Region prefHeight="4"/>
+            <Label text="SISTEMA" styleClass="nav-section-label"/>
+
+            <Button fx:id="btnConfiguracion"
+                    text="Configuración"
+                    styleClass="nav-item"
+                    onAction="#handleNavConfiguracion"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-cog"
+                              iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
+            <!-- ── Spacer ── -->
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <!-- ── Separador ── -->
+            <Separator styleClass="sidebar-sep"/>
+
+            <!-- ── Footer: Info del usuario logueado ── -->
+            <HBox styleClass="sidebar-user-card"
+                  spacing="12" alignment="CENTER_LEFT">
+                <StackPane styleClass="user-avatar-sidebar">
+                    <Label fx:id="lblUserInitials" text="AD"
+                           styleClass="user-avatar-text"/>
+                </StackPane>
+                <VBox spacing="2" HBox.hgrow="ALWAYS">
+                    <Label fx:id="lblUserName"
+                           text="Administrador"
+                           styleClass="sidebar-user-name"/>
+                    <Label fx:id="lblUserRole"
+                           text="ADMIN"
+                           styleClass="sidebar-user-role"/>
+                </VBox>
+                <Button styleClass="btn-logout"
+                        onAction="#handleLogout"
+                        mnemonicParsing="false">
+                    <tooltip><Tooltip text="Cerrar sesión"/></tooltip>
+                    <graphic>
+                        <FontIcon iconLiteral="fas-sign-out-alt"
+                                  iconSize="14" iconColor="#A8B2C1"/>
+                    </graphic>
+                </Button>
+            </HBox>
+
+        </VBox>
+    </left>
+
+    <!-- ═══════════════════════════════════════
+         CENTRO — Área de contenido dinámico
+         Las sub-vistas se apilan aquí.
+         Solo la vista activa es visible.
+    ════════════════════════════════════════ -->
+    <center>
+        <StackPane fx:id="contentArea"
+                   styleClass="content-area"
+                   VBox.vgrow="ALWAYS"/>
+    </center>
+
+</BorderPane>

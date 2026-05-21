@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      spacing="0" styleClass="view-root"
+      fx:controller="com.edj.developer.apploans.controller.SettingController">
+
+    <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+        <VBox alignment="CENTER_LEFT" spacing="2">
+            <Label text="Configuraciones del Sistema" styleClass="topbar-title"/>
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <Label text="Panel Principal" styleClass="breadcrumb-link"/>
+                <Label text="/" styleClass="text-muted"/>
+                <Label text="Configuraciones" styleClass="text-muted text-sm"/>
+            </HBox>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label styleClass="user-avatar" text="AD"/>
+    </HBox>
+
+    <VBox VBox.vgrow="ALWAYS" spacing="20" style="-fx-padding: 20 0 0 0;">
+
+        <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" style="-fx-padding: 0 24 24 24;">
+            <Tab text="Montos de Préstamo">
+                <VBox spacing="15" styleClass="card" style="-fx-padding: 20;">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="txtNewAmount" promptText="Ej: 50000" styleClass="form-control"/>
+                        <Button text="Agregar Monto" onAction="#handleAddAmount" styleClass="btn-primary">
+                            <graphic><FontIcon iconLiteral="fas-plus" iconColor="white"/></graphic>
+                        </Button>
+                    </HBox>
+                    <TableView fx:id="tblAmounts" styleClass="app-table" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colAmountValue" text="Monto Disponible" prefWidth="300"/>
+                            <TableColumn fx:id="colAmountAction" text="Acciones" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <Tab text="Frecuencias de Pago">
+                <VBox spacing="15" styleClass="card" style="-fx-padding: 20;">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <TextField fx:id="txtFreqName" promptText="Nombre (Ej: Semanal)" styleClass="form-control"/>
+                        <TextField fx:id="txtFreqDays" promptText="Días (Ej: 7)" styleClass="form-control" prefWidth="80"/>
+                        <Button text="Agregar Frecuencia" onAction="#handleAddFrequency" styleClass="btn-primary">
+                            <graphic><FontIcon iconLiteral="fas-plus" iconColor="white"/></graphic>
+                        </Button>
+                    </HBox>
+                    <TableView fx:id="tblFrequencies" styleClass="app-table" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colFreqName" text="Frecuencia" prefWidth="200"/>
+                            <TableColumn fx:id="colFreqDays" text="Días de Intervalo" prefWidth="150"/>
+                            <TableColumn fx:id="colFreqAction" text="Acciones" prefWidth="100"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </Tab>
+
+            <Tab text="General">
+                <VBox spacing="20" styleClass="card" style="-fx-padding: 30;">
+                    <Label text="Perfil y Aplicación" styleClass="card-title" style="-fx-font-size: 18px;"/>
+
+                    <GridPane hgap="15" vgap="15">
+                        <columnConstraints>
+                            <ColumnConstraints prefWidth="150"/>
+                            <ColumnConstraints hgrow="ALWAYS"/>
+                        </columnConstraints>
+
+                        <Label text="Nombre del Negocio:"/>
+                        <TextField fx:id="txtBusinessName" styleClass="form-control" GridPane.columnIndex="1"/>
+
+                        <Label text="Nombre Completo:" GridPane.rowIndex="1"/>
+                        <TextField fx:id="txtUserFullName" styleClass="form-control" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                        <Label text="Nueva Contraseña:" GridPane.rowIndex="2"/>
+                        <PasswordField fx:id="txtNewPassword" styleClass="form-control" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                    </GridPane>
+
+                    <HBox alignment="CENTER_RIGHT" style="-fx-padding: 20 0 0 0;">
+                        <Button text="Guardar Cambios Generales" onAction="#handleUpdateGeneral" styleClass="btn-primary">
+                            <graphic><FontIcon iconLiteral="fas-save" iconColor="white"/></graphic>
+                        </Button>
+                    </HBox>
+                </VBox>
+            </Tab>
+        </TabPane>
+
+    </VBox>
+</VBox>

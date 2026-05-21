@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<VBox xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.edj.developer.apploans.controller.ReportHubController"
+      styleClass="view-root" spacing="0">
+
+    <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+        <VBox alignment="CENTER_LEFT" spacing="2">
+            <Label text="Módulo de Reportes e Impresiones" styleClass="topbar-title"/>
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <Label text="Panel Principal" styleClass="breadcrumb-link"/>
+                <Label text="/" styleClass="text-muted"/>
+                <Label text="Reportes" styleClass="text-muted text-sm"/>
+            </HBox>
+        </VBox>
+    </HBox>
+
+    <VBox VBox.vgrow="ALWAYS" styleClass="card" spacing="20" style="-fx-padding: 30;">
+        <Label text="Seleccione el reporte que desea generar para impresión en A4"
+               style="-fx-font-size: 14px; -fx-text-fill: #495057; -fx-font-weight: bold;"/>
+
+        <HBox spacing="20">
+            <VBox styleClass="stat-card, stat-card-primary" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateDailyReport">
+                <HBox alignment="CENTER_LEFT" spacing="14">
+                    <FontIcon iconLiteral="fas-calendar-day" iconSize="28" styleClass="stat-icon-primary"/>
+                    <VBox spacing="4">
+                        <Label text="REPORTE DIARIO" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d6efd;"/>
+                        <Label text="Cuotas con vencimiento el día de hoy." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="stat-card, stat-card-success" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateGeneralReport">
+                <HBox alignment="CENTER_LEFT" spacing="14">
+                    <FontIcon iconLiteral="fas-print" iconSize="28" styleClass="stat-icon-success"/>
+                    <VBox spacing="4">
+                        <Label text="PLANILLA GENERAL" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #198754;"/>
+                        <Label text="Todos los créditos activos de la cartera." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+                    </VBox>
+                </HBox>
+            </VBox>
+        </HBox>
+    </VBox>
+</VBox>

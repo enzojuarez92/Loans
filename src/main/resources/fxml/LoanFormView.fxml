@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+<?import java.net.URL?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.edj.developer.apploans.controller.LoanFormController"
+      styleClass="view-root"
+      spacing="0"
+      prefWidth="1000.0" prefHeight="700.0">
+
+    <stylesheets>
+        <URL value="@/css/style.css" />
+    </stylesheets>
+
+    <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+        <VBox alignment="CENTER_LEFT" spacing="2">
+            <Label text="Nuevo Préstamo" styleClass="topbar-title"/>
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <Label text="Préstamos" styleClass="breadcrumb-link"/>
+                <Label text="/" styleClass="text-muted"/>
+                <Label text="Registro de Crédito" styleClass="text-muted,text-sm"/>
+            </HBox>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Label styleClass="user-avatar" text="AD"/>
+    </HBox>
+
+    <HBox spacing="20" VBox.vgrow="ALWAYS" style="-fx-padding: 20 24;">
+
+        <VBox HBox.hgrow="ALWAYS" styleClass="card" spacing="0">
+            <HBox styleClass="card-header" spacing="10" alignment="CENTER_LEFT">
+                <FontIcon iconLiteral="fas-file-invoice-dollar" iconSize="15" iconColor="#495057"/>
+                <Label text="Configuración del Crédito" styleClass="card-title"/>
+            </HBox>
+
+            <VBox spacing="20" style="-fx-padding: 25;">
+                <GridPane hgap="20" vgap="20">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+
+                    <VBox spacing="8" GridPane.columnSpan="2">
+                        <Label text="Seleccionar Cliente" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbCustomer" maxWidth="Infinity" promptText="Escriba nombre o DNI..."
+                                  editable="true" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="1">
+                        <Label text="Monto del Capital" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbAmount" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                        <Label text="Frecuencia de Pago" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbFrequency" maxWidth="Infinity" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="2">
+                        <Label text="Cantidad de Cuotas" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbInstallments" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                        <Label text="Interés Mensual (%)" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbInterest" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                    </VBox>
+                </GridPane>
+
+                <Region VBox.vgrow="ALWAYS"/>
+                <Separator/>
+                <HBox alignment="CENTER_RIGHT">
+                    <Label text="Los intereses se calculan sobre el capital total" styleClass="text-muted" style="-fx-font-style: italic;"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <VBox prefWidth="340" spacing="15" styleClass="card-summary" alignment="TOP_CENTER" style="-fx-background-color: #2c3e50; -fx-background-radius: 8; -fx-padding: 20;">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <FontIcon iconLiteral="fas-calculator" iconSize="14" iconColor="white"/>
+                <Label text="RESUMEN" styleClass="section-title-white" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+            </HBox>
+
+            <VBox spacing="5" alignment="CENTER" style="-fx-padding: 30 0;">
+                <Label text="TOTAL A COBRAR" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                <Label fx:id="lblTotalAmount" text="0.00" styleClass="lbl-total-big" style="-fx-text-fill: white; -fx-font-size: 32; -fx-font-weight: bold;"/>
+            </VBox>
+
+            <VBox spacing="15" style="-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 8; -fx-padding: 20;">
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Detalle de Cuotas:" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblInstallmentSummary" text="0 cuotas de $ 0.00" styleClass="lbl-summary-val" style="-fx-text-fill: white;"/>
+                </HBox>
+                <Separator opacity="0.2"/>
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Interés Ganado:" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblInterestEarned" text="0.00" styleClass="lbl-summary-val-green" style="-fx-text-fill: #2ecc71; -fx-font-weight: bold;"/>
+                </HBox>
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <Button fx:id="btnCreateLoan" text="CREAR PRÉSTAMO"
+                    onAction="#handleCreateLoan" maxWidth="Infinity"
+                    styleClass="btn,btn-primary" prefHeight="45">
+                <graphic>
+                    <FontIcon iconLiteral="fas-check-circle" iconSize="16" iconColor="white"/>
+                </graphic>
+            </Button>
+        </VBox>
+    </HBox>
+</VBox>

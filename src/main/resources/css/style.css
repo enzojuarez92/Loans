@@ -1,0 +1,872 @@
+/* ═══════════════════════════════════════════════════════════════
+   AppLoans — style.css
+   Paleta: Primary #25467E | Success #28A745 | Danger #DC3545
+   Patrón: variables en .root → propagación automática a componentes
+═══════════════════════════════════════════════════════════════ */
+
+/* ─── 1. DESIGN TOKENS ─────────────────────────────────────── */
+.root {
+    /* Marca */
+    -primary:         #25467E;
+    -primary-dark:    #1a3260;
+    -primary-light:   #3a5fa3;
+
+    -success:         #28A745;
+    -success-dark:    #1e7e34;
+    -success-light:   #d4edda;
+
+    -danger:          #DC3545;
+    -danger-dark:     #bd2130;
+    -danger-light:    #f8d7da;
+
+    -warning:         #FFC107;
+    -warning-dark:    #d39e00;
+    -warning-light:   #fff3cd;
+
+    -info:            #17A2B8;
+    -info-dark:       #117a8b;
+    -info-light:      #d1ecf1;
+
+    /* Neutrales */
+    -white:           #FFFFFF;
+    -gray-50:         #F8F9FA;
+    -gray-100:        #F1F3F5;
+    -gray-200:        #E9ECEF;
+    -gray-300:        #DEE2E6;
+    -gray-400:        #CED4DA;
+    -gray-500:        #ADB5BD;
+    -gray-600:        #6C757D;
+    -gray-700:        #495057;
+    -gray-800:        #343A40;
+    -gray-900:        #212529;
+
+    /* Sidebar */
+    -sidebar-bg:      #1E2430;
+    -sidebar-text:    #A8B2C1;
+
+    /* Sombras */
+    -shadow-sm:       dropshadow(gaussian, rgba(0,0,0,0.07), 4,  0, 0, 2);
+    -shadow-md:       dropshadow(gaussian, rgba(0,0,0,0.11), 10, 0, 0, 4);
+    -shadow-lg:       dropshadow(gaussian, rgba(0,0,0,0.16), 20, 0, 0, 8);
+    -shadow-primary:  dropshadow(gaussian, rgba(37,70,126,0.30), 10, 0, 0, 3);
+
+    /* Bordes */
+    -border:          #DEE2E6;
+    -radius-sm:       4px;
+    -radius-md:       8px;
+    -radius-lg:       12px;
+    -radius-pill:     50px;
+
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 14px;
+    -fx-background-color: -gray-50;
+}
+
+/* ─── 2. LAYOUT ─────────────────────────────────────────────── */
+.view-root   { -fx-background-color: -gray-50; }
+
+/* ─── 3. TOPBAR ─────────────────────────────────────────────── */
+.topbar {
+    -fx-background-color: -white;
+    -fx-padding: 0 24px;
+    -fx-min-height: 60px;
+    -fx-max-height: 60px;
+    -fx-effect: -shadow-sm;
+    -fx-border-color: transparent transparent -border transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.topbar-title  { -fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: -gray-800; }
+.breadcrumb-link { -fx-font-size: 12px; -fx-text-fill: -primary; -fx-cursor: hand; }
+
+.user-avatar {
+    -fx-background-color: -primary;
+    -fx-background-radius: 50%;
+    -fx-min-width: 36px; -fx-min-height: 36px;
+    -fx-max-width: 36px; -fx-max-height: 36px;
+    -fx-text-fill: -white;
+    -fx-font-weight: bold; -fx-font-size: 12px;
+    -fx-alignment: center;
+}
+
+/* ─── 4. STAT CARDS ─────────────────────────────────────────── */
+.stats-bar  { -fx-padding: 20px 24px 0 24px; }
+
+.stat-card {
+    -fx-background-color: -white;
+    -fx-background-radius: -radius-md;
+    -fx-border-radius: -radius-md;
+    -fx-border-color: -border;
+    -fx-border-width: 1px;
+    -fx-effect: -shadow-sm;
+    -fx-padding: 18px 20px;
+}
+.stat-card-primary { -fx-border-color: transparent transparent transparent -primary;  -fx-border-width: 0 0 0 4px; }
+.stat-card-success { -fx-border-color: transparent transparent transparent -success;  -fx-border-width: 0 0 0 4px; }
+.stat-card-danger  { -fx-border-color: transparent transparent transparent -danger;   -fx-border-width: 0 0 0 4px; }
+.stat-card-warning { -fx-border-color: transparent transparent transparent -warning;  -fx-border-width: 0 0 0 4px; }
+
+.stat-value { -fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: -gray-800; }
+.stat-label { -fx-font-size: 10px; -fx-text-fill: -gray-500; -fx-letter-spacing: 0.5px; }
+
+.stat-icon-primary { -fx-icon-color: -primary;  -fx-icon-size: 30px; }
+.stat-icon-success { -fx-icon-color: -success;  -fx-icon-size: 30px; }
+.stat-icon-danger  { -fx-icon-color: -danger;   -fx-icon-size: 30px; }
+.stat-icon-warning { -fx-icon-color: -warning;  -fx-icon-size: 30px; }
+
+/* ─── 5. CARD ───────────────────────────────────────────────── */
+.card {
+    -fx-background-color: -white;
+    -fx-background-radius: -radius-md;
+    -fx-border-radius: -radius-md;
+    -fx-border-color: -border;
+    -fx-border-width: 1px;
+    -fx-effect: -shadow-sm;
+    -fx-margin: 20px 24px;
+}
+.card-header {
+    -fx-padding: 14px 20px;
+    -fx-background-color: -white;
+    -fx-border-color: transparent transparent -border transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.card-footer {
+    -fx-padding: 10px 20px;
+    -fx-background-color: -gray-50;
+    -fx-border-color: -border transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-alignment: center;
+}
+
+.card-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: -gray-800; }
+
+/* ─── 6. BUTTONS ────────────────────────────────────────────── */
+
+/* Clase Base: Define la estructura, pero no el color */
+.btn {
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-cursor: hand;
+    -fx-border-width: 1px;
+    -fx-padding: 8px 16px;
+    -fx-background-radius: -radius-sm;
+    -fx-border-radius: -radius-sm;
+    -fx-graphic-text-gap: 8px;
+    -fx-alignment: center;
+}
+
+/* Variantes de Color */
+.btn-primary {
+    -fx-background-color: -primary !important;
+    -fx-text-fill: -white;
+    -fx-border-color: -primary;
+    -fx-effect: -shadow-primary;
+}
+.btn-primary:hover   { -fx-background-color: -primary-dark !important; -fx-border-color: -primary-dark; }
+.btn-primary:pressed { -fx-background-color: #152b57 !important; }
+/* Asegura que el icono sea blanco */
+.btn-primary .ikonli-font-icon { -fx-icon-color: -white; }
+
+.btn-secondary {
+    -fx-background-color: -gray-200 !important;
+    -fx-text-fill: -gray-700;
+    -fx-border-color: -gray-300;
+}
+.btn-secondary:hover { -fx-background-color: -gray-300 !important; }
+.btn-secondary .ikonli-font-icon { -fx-icon-color: -gray-700; }
+
+.btn-success {
+    -fx-background-color: -success !important;
+    -fx-text-fill: -white; /* Cambiado a blanco para mejor contraste */
+    -fx-border-color: -success-dark;
+    -fx-effect: dropshadow(gaussian, rgba(40, 167, 69, 0.3), 10, 0, 0, 3);
+}
+
+.btn-success:hover {
+    -fx-background-color: -success-dark !important;
+    -fx-border-color: -success-dark;
+}
+
+.btn-success:pressed {
+    /* Un verde más oscuro que el dark para el efecto de hundido */
+    -fx-background-color: #155d27 !important;
+}
+
+/* Asegura que el icono también sea blanco */
+.btn-success .ikonli-font-icon {
+    -fx-icon-color: -white;
+}
+
+.btn-outline-primary {
+    -fx-background-color: transparent !important;
+    -fx-text-fill: -primary;
+    -fx-border-color: -primary;
+}
+.btn-outline-primary:hover {
+    -fx-background-color: -primary !important;
+    -fx-text-fill: -white;
+}
+.btn-outline-primary .ikonli-font-icon { -fx-icon-color: -primary; }
+.btn-outline-primary:hover .ikonli-font-icon { -fx-icon-color: -white; }
+
+.btn-outline-danger {
+    -fx-background-color: transparent !important;
+    -fx-text-fill: -danger;
+    -fx-border-color: -danger;
+}
+.btn-outline-danger:hover {
+    -fx-background-color: -danger !important;
+    -fx-text-fill: -white;
+}
+.btn-outline-danger .ikonli-font-icon { -fx-icon-color: -danger; }
+.btn-outline-danger:hover .ikonli-font-icon { -fx-icon-color: -white; }
+
+/* Tamaños y Especiales */
+.btn-sm {
+    -fx-font-size: 12px;
+    -fx-padding: 5px 10px;
+}
+
+.btn-icon {
+    -fx-padding: 5px 8px;
+}
+
+/* Botón de eliminar para tablas (Rojo sólido pequeño) */
+.btn-danger-sm {
+    -fx-background-color: -danger !important;
+    -fx-text-fill: -white;
+    -fx-cursor: hand;
+    -fx-padding: 4px 8px;
+    -fx-background-radius: -radius-sm;
+}
+.btn-danger-sm:hover { -fx-background-color: -danger-dark !important; }
+.btn-danger-sm .ikonli-font-icon {
+    -fx-icon-color: -white;
+    -fx-icon-size: 12px;
+}
+
+/* ─── 7. FORM CONTROLS ──────────────────────────────────────── */
+.form-control {
+    -fx-background-color: -white;
+    -fx-border-color: -gray-400;
+    -fx-border-radius: -radius-sm; -fx-background-radius: -radius-sm;
+    -fx-border-width: 1px; -fx-padding: 8px 12px;
+    -fx-font-size: 14px;
+}
+.form-control:focused { -fx-border-color: -primary; }
+
+.search-field {
+    -fx-background-color: -gray-100;
+    -fx-border-color: -gray-300;
+    -fx-border-radius: -radius-pill; -fx-background-radius: -radius-pill;
+    -fx-padding: 7px 16px;
+    -fx-prompt-text-fill: -gray-500;
+}
+.search-field:focused {
+    -fx-background-color: -white; -fx-border-color: -primary;
+    -fx-effect: dropshadow(gaussian, rgba(37,70,126,0.15), 5, 0, 0, 0);
+}
+
+/* ─── 8. TABLE VIEW ─────────────────────────────────────────── */
+.app-table {
+    -fx-background-color: -white;
+    -fx-border-color: -border;
+    -fx-border-radius: 0; /* dentro del card */
+    -fx-table-cell-border-color: -gray-200;
+}
+.app-table .column-header-background {
+    -fx-background-color: -gray-100;
+}
+.app-table .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent -gray-200 -gray-300 transparent;
+    -fx-border-width: 0 1px 2px 0;
+    -fx-padding: 11px 16px;
+}
+.app-table .column-header .label {
+    -fx-text-fill: -gray-600; -fx-font-weight: bold;
+    -fx-font-size: 12px; -fx-letter-spacing: 0.3px;
+}
+.app-table .table-row-cell {
+    -fx-background-color: -white;
+    -fx-border-color: transparent transparent -gray-200 transparent;
+    -fx-border-width: 0 0 1px 0;
+}
+.app-table .table-row-cell:odd  { -fx-background-color: -gray-50; }
+.app-table .table-row-cell:hover { -fx-background-color: rgba(37,70,126,0.05); }
+.app-table .table-row-cell:selected { -fx-background-color: rgba(37,70,126,0.10); }
+.app-table .table-cell {
+    -fx-padding: 11px 16px;
+    -fx-text-fill: -gray-700; -fx-font-size: 14px;
+    -fx-alignment: center-left;
+    -fx-border-color: transparent;
+}
+
+/* ─── 9. BADGES ─────────────────────────────────────────────── */
+.badge {
+    -fx-font-size: 11px; -fx-font-weight: bold;
+    -fx-padding: 3px 10px;
+    -fx-background-radius: -radius-pill;
+}
+.badge-success   { -fx-background-color: -success-light; -fx-text-fill: -success-dark; }
+.badge-danger    { -fx-background-color: -danger-light;  -fx-text-fill: -danger-dark;  }
+.badge-warning   { -fx-background-color: -warning-light; -fx-text-fill: -warning-dark; }
+.badge-info      { -fx-background-color: -info-light;    -fx-text-fill: -info-dark;    }
+.badge-primary   { -fx-background-color: rgba(37,70,126,0.10); -fx-text-fill: -primary; }
+.badge-secondary { -fx-background-color: -gray-200;      -fx-text-fill: -gray-700;     }
+
+/* ─── 10. PAGINATION ────────────────────────────────────────── */
+.pagination .pagination-control   { -fx-background-color: transparent; -fx-padding: 4px 0; }
+.pagination .button {
+    -fx-background-color: -white; -fx-border-color: -gray-300;
+    -fx-border-radius: -radius-sm; -fx-background-radius: -radius-sm;
+    -fx-text-fill: -gray-700; -fx-font-size: 12px;
+    -fx-min-width: 32px; -fx-min-height: 32px; -fx-cursor: hand;
+}
+.pagination .button:hover    { -fx-background-color: -gray-100; }
+.pagination .button.current  {
+    -fx-background-color: -primary; -fx-text-fill: -white;
+    -fx-border-color: -primary; -fx-effect: -shadow-primary;
+}
+.pagination .page-information { -fx-opacity: 0; }
+
+.pagination {
+    -fx-alignment: center;
+}
+.pagination > .control-box {
+    -fx-alignment: center;
+    -fx-padding: 0;
+}
+
+/* ─── 11. DIALOG ────────────────────────────────────────────── */
+.dialog-pane {
+    -fx-background-color: -white;
+    -fx-border-color: -border;
+    -fx-border-radius: -radius-lg; -fx-background-radius: -radius-lg;
+    -fx-effect: -shadow-lg;
+}
+.dialog-pane .header-panel {
+    -fx-background-color: -gray-50;
+    -fx-border-color: transparent transparent -border transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 18px 22px;
+    -fx-background-radius: -radius-lg -radius-lg 0 0;
+}
+.dialog-pane .header-panel .label { -fx-font-size: 17px; -fx-font-weight: bold; }
+.dialog-pane .content { -fx-padding: 22px; }
+.dialog-pane .button-bar {
+    -fx-padding: 14px 22px;
+    -fx-background-color: -gray-50;
+    -fx-border-color: -border transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+
+/* ─── 12. SIDEBAR ───────────────────────────────────────────── */
+.sidebar {
+    -fx-background-color: -sidebar-bg;
+    -fx-min-width: 240px; -fx-max-width: 240px;
+    -fx-effect: -shadow-lg;
+}
+.nav-item {
+    -fx-background-color: transparent;
+    -fx-text-fill: -sidebar-text;
+    -fx-font-size: 14px;
+    -fx-padding: 10px 16px;
+    -fx-cursor: hand; -fx-alignment: center-left;
+    -fx-graphic-text-gap: 12px;
+    -fx-border-width: 0;
+    -fx-min-width: 240px;
+}
+
+.nav-section-label {
+    -fx-text-fill: rgba(255, 255, 255, 0.4); /* Blanco semi-transparente */
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 15px 0 5px 16px; /* Espaciado para que no esté pegado */
+    -fx-letter-spacing: 1.2px;    /* Un toque de separación de letras queda muy pro */
+}
+
+/* Opcional: Si quieres que el texto de AppLoans se destaque más */
+.sidebar-logo-text {
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.sidebar-subtitle {
+    -fx-text-fill: rgba(255, 255, 255, 0.5);
+    -fx-font-size: 9px;
+    -fx-letter-spacing: 1px;
+}
+
+.nav-item:hover { -fx-background-color: rgba(255,255,255,0.07); -fx-text-fill: white; }
+.nav-item.active {
+    -fx-background-color: -primary; -fx-text-fill: white;
+    -fx-border-color: transparent transparent transparent #7FB3FF;
+    -fx-border-width: 0 0 0 3px;
+}
+
+/* ─── 13. SCROLL BARS (minimalistas) ────────────────────────── */
+.scroll-bar .track  { -fx-background-color: -gray-100; }
+.scroll-bar .thumb  { -fx-background-color: -gray-400; -fx-background-radius: 10px; }
+.scroll-bar .thumb:hover { -fx-background-color: -gray-500; }
+.scroll-bar .increment-button, .scroll-bar .decrement-button,
+.scroll-bar .increment-arrow,  .scroll-bar .decrement-arrow {
+    -fx-background-color: transparent;
+    -fx-pref-width: 0; -fx-pref-height: 0; -fx-opacity: 0;
+}
+
+/* ─── 14. UTILIDADES ────────────────────────────────────────── */
+.text-muted    { -fx-text-fill: -gray-500; }
+.text-primary  { -fx-text-fill: -primary; }
+.text-sm       { -fx-font-size: 12px; }
+.text-bold     { -fx-font-weight: bold; }
+.empty-state-text { -fx-font-size: 16px; -fx-text-fill: -gray-400; }
+
+/* ─── MODAL ─────────────────────────────────────────────────── */
+.modal-root {
+    -fx-background-color: -white;
+    -fx-background-radius: -radius-lg;
+    -fx-border-color: -border;
+    -fx-border-radius: -radius-lg;
+    -fx-effect: -shadow-lg;
+}
+
+.modal-header {
+    -fx-background-color: -gray-50;
+    -fx-padding: 18px 24px;
+    -fx-border-color: transparent transparent -border transparent;
+    -fx-border-width: 0 0 1px 0;
+    -fx-background-radius: -radius-lg -radius-lg 0 0;
+}
+
+.modal-title    { -fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: -gray-800; }
+.modal-subtitle { -fx-font-size: 12px; -fx-text-fill: -gray-500; }
+
+.modal-footer {
+    -fx-background-color: -gray-50;
+    -fx-padding: 14px 24px;
+    -fx-border-color: -border transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+    -fx-background-radius: 0 0 -radius-lg -radius-lg;
+}
+
+/* ─── FORM SCROLL ────────────────────────────────────────────── */
+.form-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+.form-scroll > .viewport { -fx-background-color: transparent; }
+
+.form-body {
+    -fx-background-color: -white;
+    -fx-padding: 24px;
+}
+
+/* ─── FORM ELEMENTS ──────────────────────────────────────────── */
+.form-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: -gray-700;
+}
+
+.form-section-label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -gray-500;
+    -fx-letter-spacing: 1px;
+}
+
+.required-mark {
+    -fx-text-fill: -danger;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.field-error {
+    -fx-font-size: 11px;
+    -fx-text-fill: -danger;
+    -fx-padding: 2px 0 0 2px;
+}
+
+.field-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: -gray-500;
+    -fx-padding: 2px 0 0 2px;
+}
+
+/* ─── FORM CONTROL — estado de error ────────────────────────── */
+.form-control-error {
+    -fx-border-color: -danger !important;
+    -fx-effect: dropshadow(gaussian, rgba(220,53,69,0.20), 4, 0, 0, 0);
+}
+
+/* ─── TEXTAREA ───────────────────────────────────────────────── */
+.form-textarea {
+    -fx-font-family: 'Segoe UI';
+    -fx-font-size: 14px;
+    -fx-border-color: -gray-400;
+    -fx-border-radius: -radius-sm;
+    -fx-background-radius: -radius-sm;
+}
+.form-textarea:focused { -fx-border-color: -primary; }
+
+/* ─── INPUT PREFIX (para campo Phone) ────────────────────────── */
+.input-prefix {
+    -fx-background-color: -gray-200;
+    -fx-border-color: -gray-400;
+    -fx-border-radius: -radius-sm 0 0 -radius-sm;
+    -fx-background-radius: -radius-sm 0 0 -radius-sm;
+    -fx-border-width: 1px 0 1px 1px;
+    -fx-padding: 8px 10px;
+    -fx-text-fill: -gray-600;
+    -fx-font-weight: 600;
+    -fx-font-size: 13px;
+}
+
+.input-with-prefix {
+    -fx-border-radius: 0 -radius-sm -radius-sm 0;
+    -fx-background-radius: 0 -radius-sm -radius-sm 0;
+    -fx-border-width: 1px 1px 1px 0;
+}
+
+/* ─── ALERT BOX ──────────────────────────────────────────────── */
+.alert-box {
+    -fx-padding: 12px 16px;
+    -fx-background-radius: -radius-sm;
+    -fx-border-radius: -radius-sm;
+    -fx-border-width: 1px;
+}
+.alert-danger {
+    -fx-background-color: -danger-light;
+    -fx-border-color: -danger;
+}
+.text-danger { -fx-text-fill: -danger; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADICIONES AL ARCHIVO: src/main/resources/css/style.css
+   Agregar al final del archivo existente.
+   Nuevos bloques: Login, Sidebar actualizada, Content Area
+═══════════════════════════════════════════════════════════════════ */
+
+/* ─── LOGIN: Root ────────────────────────────────────────────────── */
+.login-root {
+    -fx-background-color: -white;
+}
+
+/* ─── LOGIN: Panel izquierdo de marca ───────────────────────────── */
+.brand-panel {
+    -fx-background-color: -primary;
+    -fx-padding: 40px 36px;
+    -fx-min-width: 360px;
+    -fx-max-width: 360px;
+}
+
+.brand-logo-block { -fx-padding: 0 0 0 0; }
+
+.brand-icon-wrap {
+    -fx-background-color: rgba(255,255,255,0.15);
+    -fx-background-radius: 14px;
+    -fx-min-width: 64px;
+    -fx-min-height: 64px;
+    -fx-max-width: 64px;
+    -fx-max-height: 64px;
+    -fx-alignment: center;
+}
+
+.brand-name-thin {
+    -fx-font-size: 26px;
+    -fx-font-weight: 300;
+    -fx-text-fill: rgba(255,255,255,0.80);
+    -fx-padding: 0;
+}
+.brand-name-bold {
+    -fx-font-size: 26px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -white;
+    -fx-padding: 0;
+}
+
+.brand-tagline {
+    -fx-font-size: 12px;
+    -fx-text-fill: rgba(255,255,255,0.55);
+    -fx-letter-spacing: 1.5px;
+    -fx-padding: 6px 0 0 0;
+}
+
+.brand-divider .line {
+    -fx-border-color: rgba(255,255,255,0.20);
+}
+
+/* ─── Features list ──────────────────────────────────────────────── */
+.brand-features { -fx-padding: 0 0 0 4px; }
+
+.feature-icon-wrap {
+    -fx-background-color: rgba(255,255,255,0.12);
+    -fx-background-radius: 8px;
+    -fx-min-width: 36px;
+    -fx-min-height: 36px;
+    -fx-max-width: 36px;
+    -fx-max-height: 36px;
+    -fx-alignment: center;
+}
+
+.feature-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -white;
+}
+.feature-desc {
+    -fx-font-size: 11px;
+    -fx-text-fill: rgba(255,255,255,0.55);
+}
+
+.brand-version {
+    -fx-font-size: 11px;
+    -fx-text-fill: rgba(255,255,255,0.35);
+    -fx-padding: 16px 0 0 0;
+    -fx-alignment: center;
+}
+
+/* ─── LOGIN: Panel derecho de formulario ────────────────────────── */
+.form-panel {
+    -fx-background-color: -white;
+    -fx-padding: 52px 52px 36px 52px;
+}
+
+.login-form-header { -fx-padding: 0; }
+
+.login-title {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -gray-800;
+}
+.login-subtitle {
+    -fx-font-size: 13px;
+    -fx-text-fill: -gray-500;
+}
+
+/* ─── Alert de error en login ────────────────────────────────────── */
+.login-alert-error {
+    -fx-background-color: -danger-light;
+    -fx-border-color: -danger;
+    -fx-border-radius: -radius-sm;
+    -fx-background-radius: -radius-sm;
+    -fx-border-width: 1px;
+    -fx-padding: 10px 14px;
+}
+.login-error-text {
+    -fx-font-size: 13px;
+    -fx-text-fill: -danger-dark;
+}
+
+/* ─── Campos del formulario de login ────────────────────────────── */
+.login-fields { -fx-padding: 0; }
+
+/* Wrapper para campo con ícono a la izquierda */
+.input-icon-wrap {
+    -fx-border-color: -gray-400;
+    -fx-border-radius: -radius-sm;
+    -fx-background-radius: -radius-sm;
+    -fx-background-color: -white;
+    -fx-border-width: 1px;
+}
+.input-icon-wrap:focused-within {
+    -fx-border-color: -primary;
+    -fx-effect: dropshadow(gaussian, rgba(37,70,126,0.15), 6, 0, 0, 0);
+}
+
+.input-icon-box {
+    -fx-background-color: -gray-100;
+    -fx-border-color: transparent -gray-300 transparent transparent;
+    -fx-border-width: 0 1px 0 0;
+    -fx-min-width: 40px;
+    -fx-max-width: 40px;
+    -fx-min-height: 40px;
+    -fx-alignment: center;
+}
+
+/* TextField dentro del wrapper con ícono */
+.input-with-icon {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-padding: 8px 12px;
+    -fx-font-size: 14px;
+}
+.input-with-icon:focused {
+    -fx-border-color: transparent;
+    -fx-effect: none;
+}
+
+/* ─── Link "¿Olvidaste tu contraseña?" ──────────────────────────── */
+.forgot-link {
+    -fx-font-size: 12px;
+    -fx-text-fill: -primary;
+    -fx-cursor: hand;
+}
+.forgot-link:hover { -fx-underline: true; }
+
+/* ─── Botón de login ─────────────────────────────────────────────── */
+.btn-login {
+    -fx-font-size: 15px;
+    -fx-padding: 12px 20px;
+    -fx-background-radius: -radius-sm;
+    -fx-border-radius: -radius-sm;
+}
+
+/* ─── Hint de demo ───────────────────────────────────────────────── */
+.demo-hint {
+    -fx-font-size: 12px;
+    -fx-text-fill: -gray-500;
+    -fx-font-style: italic;
+}
+
+.form-footer-text {
+    -fx-font-size: 11px;
+    -fx-text-fill: -gray-400;
+    -fx-alignment: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SIDEBAR — Actualizaciones y nuevos estilos
+═══════════════════════════════════════════════════════════════════ */
+
+/* Logo icon en sidebar */
+.sidebar-logo-icon {
+    -fx-background-color: -primary;
+    -fx-background-radius: 8px;
+    -fx-min-width: 40px;
+    -fx-min-height: 40px;
+    -fx-max-width: 40px;
+    -fx-max-height: 40px;
+    -fx-alignment: center;
+}
+
+/* Ícono de cada nav-item */
+.nav-icon { -fx-icon-color: -sidebar-text; -fx-icon-size: 15px; }
+.nav-item:hover .nav-icon { -fx-icon-color: -white; }
+.nav-item.active .nav-icon { -fx-icon-color: -white; }
+
+/* Separador dentro de sidebar */
+.sidebar-sep .line {
+    -fx-border-color: rgba(255,255,255,0.08);
+}
+
+/* Tarjeta de usuario en el pie de la sidebar */
+.sidebar-user-card {
+    -fx-background-color: rgba(0,0,0,0.2);
+    -fx-padding: 14px 16px;
+}
+
+.user-avatar-sidebar {
+    -fx-background-color: -primary-light;
+    -fx-background-radius: 50%;
+    -fx-min-width: 38px;
+    -fx-min-height: 38px;
+    -fx-max-width: 38px;
+    -fx-max-height: 38px;
+    -fx-alignment: center;
+}
+
+.user-avatar-text {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -white;
+}
+
+.sidebar-user-name {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -white;
+}
+.sidebar-user-role {
+    -fx-font-size: 10px;
+    -fx-text-fill: rgba(168,178,193,0.7);
+    -fx-letter-spacing: 0.5px;
+}
+
+/* Botón de logout (solo ícono, sin fondo) */
+.btn-logout {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-cursor: hand;
+    -fx-padding: 6px 8px;
+    -fx-background-radius: -radius-sm;
+}
+.btn-logout:hover {
+    -fx-background-color: rgba(255,255,255,0.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CONTENT AREA — Área central de contenido
+═══════════════════════════════════════════════════════════════════ */
+.content-area {
+    -fx-background-color: -gray-50;
+}
+
+.card-summary {
+    -fx-background-color: -primary;
+    -fx-background-radius: 12px;
+    -fx-padding: 20px;
+    -fx-effect: -shadow-primary;
+}
+.section-title-white { -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 14px; }
+.lbl-summary-light { -fx-text-fill: rgba(255,255,255,0.7); -fx-font-size: 13px; }
+.lbl-total-big { -fx-text-fill: white; -fx-font-size: 32px; -fx-font-weight: bold; }
+.lbl-summary-val { -fx-text-fill: white; -fx-font-weight: 600; }
+.lbl-summary-val-green { -fx-text-fill: #2ecc71; -fx-font-weight: 800; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRADUCCIONES — Textos que el usuario ve en Español
+   (estos estilos no cambian; son recordatorio de convención)
+
+   Labels / Buttons / Placeholders en ESPAÑOL:
+     ✔ "Gestión de Clientes"   en lugar de "Customer Management"
+     ✔ "Nuevo Cliente"         en lugar de "New Customer"
+     ✔ "Buscar por nombre..."  en lugar de "Search by name..."
+     ✔ "Ingresar al Sistema"   en lugar de "Log In"
+     ✔ "Cerrar Sesión"         en lugar de "Logout"
+     ✔ "Guardar"               en lugar de "Save"
+     ✔ "Cancelar"              en lugar de "Cancel"
+     ✔ "Editar"                en lugar de "Edit"
+     ✔ "Eliminar"              en lugar de "Delete"
+
+   Código (clases, métodos, variables) en INGLÉS:
+     ✔ handleSave(), handleLogin(), CustomerDAO, findAll()
+     ✔ txtUsername, btnSave, lblError
+═══════════════════════════════════════════════════════════════════ */
+
+/* ─── BOTONES DE ACCIÓN EN TABLAS (Simétricos) ──────────────── */
+.btn-action {
+    -fx-background-color: -gray-100;     /* Fondo gris claro idéntico */
+    -fx-background-radius: -radius-sm;   /* Usa tu token de 4px */
+    -fx-border-color: -gray-300;         /* Borde gris sutil */
+    -fx-border-radius: -radius-sm;
+    -fx-border-width: 1px;
+    -fx-cursor: hand;
+    -fx-padding: 5px 8px;                /* Controla el alto y ancho exacto del botón */
+    -fx-alignment: center;
+}
+
+/* Efecto hover compartido */
+.btn-action:hover {
+    -fx-background-color: -gray-200;
+    -fx-border-color: -gray-400;
+}
+
+/* Hover específico para el botón de Ver (Ojo tintado de azul) */
+.btn-action-view:hover {
+    -fx-background-color: rgba(37, 70, 126, 0.08); /* 8% de tu color -primary */
+    -fx-border-color: -primary-light;
+}
+
+/* Hover específico para el botón de Editar (Lápiz tintado de verde) */
+.btn-action-edit:hover {
+    -fx-background-color: -success-light;          /* Fondo verde suave predefinido */
+    -fx-border-color: -success;
+}
