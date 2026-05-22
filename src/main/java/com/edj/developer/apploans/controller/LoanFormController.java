@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class LoanFormController {
 
     @FXML private ComboBox<Customer> cmbCustomer;
+    @FXML private DatePicker dpStartDate; // <-- NUEVO FIELD
     @FXML private ComboBox<Double> cmbAmount;
     @FXML private ComboBox<String> cmbFrequency;
     @FXML private ComboBox<Integer> cmbInstallments;
@@ -31,11 +32,11 @@ public class LoanFormController {
     private final CustomerDAO customerDAO = new CustomerDAOImpl();
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    // Almacén dinámico de frecuencias leídas desde la Base de Datos
     private Map<String, Integer> frequencyMap = new HashMap<>();
 
     @FXML
     public void initialize() {
+        dpStartDate.setValue(LocalDate.now()); // <-- Seteamos por defecto el día de hoy
         initConverters();
         loadData();
         setupListeners();
@@ -81,7 +82,6 @@ public class LoanFormController {
 
         cmbAmount.setItems(FXCollections.observableArrayList(loanDAO.findAllSuggestedAmounts()));
 
-        // Cargamos frecuencias dinámicas con sus intervalos desde la base de datos
         frequencyMap = loanDAO.findAllFrequenciesWithIntervals();
         cmbFrequency.setItems(FXCollections.observableArrayList(frequencyMap.keySet()));
 
@@ -89,7 +89,7 @@ public class LoanFormController {
         ObservableList<Integer> installments = FXCollections.observableArrayList();
 
         for (double i = 0; i <= 100; i++) interests.add(i);
-        for (int i = 1; i <= 100; i++) installments.add(i); // Empezamos en 1 cuota mínimo
+        for (int i = 1; i <= 100; i++) installments.add(i);
 
         cmbInterest.setItems(interests);
         cmbInstallments.setItems(installments);
@@ -102,6 +102,7 @@ public class LoanFormController {
         cmbInstallments.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbFrequency.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbCustomer.valueProperty().addListener((o, ov, nv) -> updateAction.run());
+        dpStartDate.valueProperty().addListener((o, ov, nv) -> updateAction.run()); // <-- Listener para recalcular si cambian la fecha
     }
 
     private void calculatePreview() {
@@ -115,7 +116,6 @@ public class LoanFormController {
             double interestGain = amount * (interestRate / 100);
             double total = amount + interestGain;
 
-            // Redondeo de cuota para la etiqueta utilizando BigDecimal
             BigDecimal totalBD = BigDecimal.valueOf(total);
             BigDecimal cuotaBD = totalBD.divide(BigDecimal.valueOf(installments), 2, RoundingMode.HALF_UP);
 
@@ -131,6 +131,10 @@ public class LoanFormController {
     private void handleCreateLoan() {
         if (cmbCustomer.getValue() == null) {
             AlertHelper.showWarning("Validación", "Falta Cliente", "Seleccione un cliente válido de la lista.");
+            return;
+        }
+        if (dpStartDate.getValue() == null) { // <-- Validación de fecha obligatoria
+            AlertHelper.showWarning("Validación", "Falta Fecha", "Seleccione la fecha de inicio del crédito.");
             return;
         }
         if (cmbFrequency.getValue() == null) {
@@ -168,17 +172,15 @@ public class LoanFormController {
             String selectedFreq = cmbFrequency.getValue();
             loan.setFrequency(selectedFreq);
 
-            LocalDate fechaBase = LocalDate.now();
+            // ─── AQUÍ TOMAMOS LA FECHA SELECCIONADA DEL USER ───
+            LocalDate fechaBase = dpStartDate.getValue();
             loan.setStartDate(fechaBase.format(formatter));
 
             double totalConInteres = amount + (amount * (interest / 100));
             loan.setTotalAmount(totalConInteres);
 
-            // ─── ALGORITMO FINANCIERO CON REDONDEO CONTROLADO ───
             List<LoanPayment> payments = new ArrayList<>();
-
             BigDecimal totalBD = BigDecimal.valueOf(totalConInteres);
-            // Dividimos con redondeo a 2 decimales hacia arriba (HALF_UP o CEILING)
             BigDecimal cuotaMonto = totalBD.divide(BigDecimal.valueOf(inst), 2, RoundingMode.HALF_UP);
 
             LocalDate fechaCuota = fechaBase;
@@ -186,7 +188,6 @@ public class LoanFormController {
             for (int i = 1; i <= inst; i++) {
                 fechaCuota = calculateNextDate(fechaCuota, selectedFreq);
 
-                // Si es la última cuota, por seguridad matemática ajustamos la diferencia por si sobraron centavos
                 double montoFila = cuotaMonto.doubleValue();
                 if (i == inst) {
                     BigDecimal acumuladoAnteriores = cuotaMonto.multiply(BigDecimal.valueOf(inst - 1));
@@ -208,9 +209,6 @@ public class LoanFormController {
         }
     }
 
-    /**
-     * Calcula la fecha basándose de forma dinámica en los días guardados en DB.
-     */
     private LocalDate calculateNextDate(LocalDate cur, String freq) {
         if (freq == null) return cur.plusMonths(1);
 
@@ -218,8 +216,6 @@ public class LoanFormController {
         if (daysInterval != null) {
             return cur.plusDays(daysInterval);
         }
-
-        // Fallback por si acaso
         return cur.plusMonths(1);
     }
 

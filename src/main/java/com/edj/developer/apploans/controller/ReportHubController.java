@@ -96,7 +96,7 @@ public class ReportHubController {
             lblMontoCta.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0; -fx-padding: 0 3 0 0;");
 
             // 4° Columna: ESPACIO BLANCO AMPLIO PARA ESCRIBIR EL COBRO
-            Label lblCobroVacio = new Label(" $ ________________");
+            Label lblCobroVacio = new Label(" $                 ");
             lblCobroVacio.setMinWidth(90);
             lblCobroVacio.setPrefWidth(90);
             lblCobroVacio.setAlignment(Pos.CENTER_LEFT);
@@ -160,7 +160,7 @@ public class ReportHubController {
             lblMontoCta.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0; -fx-padding: 0 3 0 0;");
 
             // 4° Columna: ESPACIO BLANCO AMPLIO PARA RECAUDACIÓN
-            Label lblCobroVacio = new Label(" $ ________________");
+            Label lblCobroVacio = new Label(" $                ");
             lblCobroVacio.setMinWidth(90);
             lblCobroVacio.setPrefWidth(90);
             lblCobroVacio.setAlignment(Pos.CENTER_LEFT);
@@ -199,7 +199,7 @@ public class ReportHubController {
         hMonto.setAlignment(Pos.CENTER);
         hMonto.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-border-color: #ffffff; -fx-border-width: 0 1 0 0;");
 
-        Label hCobro = new Label("COBRO RECAUDADO");
+        Label hCobro = new Label("RECAUDADO");
         hCobro.setMinWidth(90);
         hCobro.setAlignment(Pos.CENTER);
         hCobro.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 9px;");

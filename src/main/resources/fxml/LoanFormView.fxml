@@ -45,13 +45,18 @@
                         <ColumnConstraints percentWidth="50"/>
                     </columnConstraints>
 
-                    <VBox spacing="8" GridPane.columnSpan="2">
+                    <VBox spacing="8" GridPane.rowIndex="0" GridPane.columnIndex="0">
                         <Label text="Seleccionar Cliente" styleClass="form-label"/>
                         <ComboBox fx:id="cmbCustomer" maxWidth="Infinity" promptText="Escriba nombre o DNI..."
                                   editable="true" styleClass="form-control"/>
                     </VBox>
 
-                    <VBox spacing="8" GridPane.rowIndex="1">
+                    <VBox spacing="8" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <Label text="Fecha de Inicio" styleClass="form-label"/>
+                        <DatePicker fx:id="dpStartDate" maxWidth="Infinity" styleClass="form-control" promptText="Seleccione fecha..."/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="0">
                         <Label text="Monto del Capital" styleClass="form-label"/>
                         <ComboBox fx:id="cmbAmount" maxWidth="Infinity" editable="true" styleClass="form-control"/>
                     </VBox>
@@ -61,7 +66,7 @@
                         <ComboBox fx:id="cmbFrequency" maxWidth="Infinity" styleClass="form-control"/>
                     </VBox>
 
-                    <VBox spacing="8" GridPane.rowIndex="2">
+                    <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="0">
                         <Label text="Cantidad de Cuotas" styleClass="form-label"/>
                         <ComboBox fx:id="cmbInstallments" maxWidth="Infinity" editable="true" styleClass="form-control"/>
                     </VBox>
