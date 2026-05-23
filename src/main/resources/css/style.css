@@ -393,6 +393,10 @@
     -fx-font-weight: bold;
 }
 
+.sidebar-header{
+    -fx-padding: 10px;
+}
+
 .sidebar-subtitle {
     -fx-text-fill: rgba(255, 255, 255, 0.5);
     -fx-font-size: 9px;

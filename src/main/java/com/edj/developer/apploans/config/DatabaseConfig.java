@@ -45,6 +45,7 @@ public final class DatabaseConfig {
         log.info("Initializing database...");
         createTables();
         seedAdminUser();
+        seedDefaultConfig();
         log.info("Database ready at: {}", DB_URL);
     }
 
@@ -53,6 +54,7 @@ public final class DatabaseConfig {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
+            stmt.execute(DatabaseTables.CREATE_CONFIG_TABLE);
             stmt.execute(DatabaseTables.CREATE_USERS_TABLE);
             stmt.execute(DatabaseTables.CREATE_CUSTOMERS_TABLE);
             stmt.execute(DatabaseTables.CREATE_CONFIG_AMOUNTS_TABLE);
@@ -86,6 +88,23 @@ public final class DatabaseConfig {
 
         } catch (SQLException e) {
             log.error("Error seeding admin user", e);
+        }
+    }
+
+    private static void seedDefaultConfig() {
+        String checkSql = "SELECT COUNT(*) FROM config";
+        String insertSql = "INSERT INTO config (business_name) VALUES ('AppLoans')";
+
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             var rs = stmt.executeQuery(checkSql)) {
+
+            if (rs.next() && rs.getInt(1) == 0) {
+                stmt.executeUpdate(insertSql);
+                log.info("Default system configuration seeded successfully.");
+            }
+        } catch (SQLException e) {
+            log.error("Error seeding default config", e);
         }
     }
 }

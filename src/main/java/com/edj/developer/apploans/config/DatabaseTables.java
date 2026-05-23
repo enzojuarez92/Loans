@@ -8,6 +8,12 @@ public final class DatabaseTables {
 
     private DatabaseTables() {}
 
+    public static final String CREATE_CONFIG_TABLE = """
+            CREATE TABLE IF NOT EXISTS config (
+                business_name   TEXT
+            )
+            """;
+
     public static final String CREATE_USERS_TABLE = """
         CREATE TABLE IF NOT EXISTS users (
             id          INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -36,7 +36,7 @@
                                   iconSize="22" iconColor="white"/>
                     </StackPane>
                     <VBox spacing="0">
-                        <Label text="AppLoans" styleClass="sidebar-logo-text"/>
+                        <Label fx:id="lblLogoText" text="AppLoans" styleClass="sidebar-logo-text"/>
                         <Label text="GESTIÓN DE PRÉSTAMOS" styleClass="sidebar-subtitle"/>
                     </VBox>
                 </HBox>
