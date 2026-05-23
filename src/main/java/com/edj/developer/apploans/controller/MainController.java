@@ -173,7 +173,7 @@ public class MainController implements Initializable {
        MOTOR DE NAVEGACIÓN
     ═══════════════════════════════════════════════════════════════════ */
 
-    private void navigateTo(String viewKey, Button navBtn) {
+    public void navigateTo(String viewKey, Button navBtn) {
         if (viewKey.equals(currentView)) return;
 
         try {

@@ -175,15 +175,35 @@ public class LoanDetailController {
 
     @FXML
     private void handleBack() {
-        StackPane contentArea = (StackPane) lblCustomerName.getScene().lookup("#contentArea");
+        try {
+            javafx.scene.Scene scene = lblCustomerName.getScene();
+            if (scene != null) {
 
-        if (contentArea != null && contentArea.getChildren().size() > 1) {
-            Node viewADejar = contentArea.getChildren().get(contentArea.getChildren().size() - 1);
-            contentArea.getChildren().remove(viewADejar);
+                // 1. Buscamos el contentArea para llegar al MainController
+                javafx.scene.layout.StackPane contentArea = (javafx.scene.layout.StackPane) scene.lookup("#contentArea");
+                if (contentArea != null && contentArea.getParent() instanceof javafx.scene.layout.BorderPane borderPane) {
 
-            Node vistaAnterior = contentArea.getChildren().get(contentArea.getChildren().size() - 1);
-            vistaAnterior.setVisible(true);
-            vistaAnterior.setManaged(true);
+                    if (borderPane.getUserData() instanceof MainController mainController) {
+                        // 2. ¡EL TRUCO MAESTRO!: Usamos reflexión de Java para poner 'currentView' en null.
+                        // Esto engaña al if(viewKey.equals(currentView)) y lo obliga a recargar la lista.
+                        try {
+                            java.lang.reflect.Field field = MainController.class.getDeclaredField("currentView");
+                            field.setAccessible(true);
+                            field.set(mainController, null); // Forzamos que se olvide de la vista actual
+                        } catch (Exception re) {
+                            System.out.println("No se pudo resetear currentView por reflexión: " + re.getMessage());
+                        }
+                    }
+                }
+
+                // 3. Ahora que el MainController cree que venimos de la nada, el clic va a levantar la lista sí o sí
+                javafx.scene.Node botonPrestamos = scene.lookup("#btnPrestamos");
+                if (botonPrestamos instanceof javafx.scene.control.Button btn) {
+                    btn.fire();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

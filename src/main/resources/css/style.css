@@ -52,10 +52,12 @@
 
     /* Bordes */
     -border:          #DEE2E6;
-    -radius-sm:       4px;
-    -radius-md:       8px;
-    -radius-lg:       12px;
-    -radius-pill:     50px;
+
+    /* CORRECCIÓN: Definidos como números puros para que JavaFX los herede sin error */
+    -radius-sm:       4;
+    -radius-md:       8;
+    -radius-lg:       12;
+    -radius-pill:     50;
 
     -fx-font-family: 'Segoe UI';
     -fx-font-size: 14px;
@@ -177,7 +179,7 @@
 
 .btn-success {
     -fx-background-color: -success !important;
-    -fx-text-fill: -white; /* Cambiado a blanco para mejor contraste */
+    -fx-text-fill: -white;
     -fx-border-color: -success-dark;
     -fx-effect: dropshadow(gaussian, rgba(40, 167, 69, 0.3), 10, 0, 0, 3);
 }
@@ -188,7 +190,6 @@
 }
 
 .btn-success:pressed {
-    /* Un verde más oscuro que el dark para el efecto de hundido */
     -fx-background-color: #155d27 !important;
 }
 
@@ -238,6 +239,7 @@
     -fx-cursor: hand;
     -fx-padding: 4px 8px;
     -fx-background-radius: -radius-sm;
+    -fx-border-radius: -radius-sm;
 }
 .btn-danger-sm:hover { -fx-background-color: -danger-dark !important; }
 .btn-danger-sm .ikonli-font-icon {
@@ -247,6 +249,7 @@
 
 /* ─── 7. FORM CONTROLS ──────────────────────────────────────── */
 .form-control {
+    -white: #FFFFFF;
     -fx-background-color: -white;
     -fx-border-color: -gray-400;
     -fx-border-radius: -radius-sm; -fx-background-radius: -radius-sm;
@@ -271,7 +274,7 @@
 .app-table {
     -fx-background-color: -white;
     -fx-border-color: -border;
-    -fx-border-radius: 0; /* dentro del card */
+    -fx-border-radius: 0;
     -fx-table-cell-border-color: -gray-200;
 }
 .app-table .column-header-background {
@@ -307,6 +310,7 @@
     -fx-font-size: 11px; -fx-font-weight: bold;
     -fx-padding: 3px 10px;
     -fx-background-radius: -radius-pill;
+    -fx-border-radius: -radius-pill;
 }
 .badge-success   { -fx-background-color: -success-light; -fx-text-fill: -success-dark; }
 .badge-danger    { -fx-background-color: -danger-light;  -fx-text-fill: -danger-dark;  }
@@ -323,7 +327,7 @@
     -fx-text-fill: -gray-700; -fx-font-size: 12px;
     -fx-min-width: 32px; -fx-min-height: 32px; -fx-cursor: hand;
 }
-.pagination .button:hover    { -fx-background-color: -gray-100; }
+.pagination .button:hover     { -fx-background-color: -gray-100; }
 .pagination .button.current  {
     -fx-background-color: -primary; -fx-text-fill: -white;
     -fx-border-color: -primary; -fx-effect: -shadow-primary;
@@ -379,14 +383,13 @@
 }
 
 .nav-section-label {
-    -fx-text-fill: rgba(255, 255, 255, 0.4); /* Blanco semi-transparente */
+    -fx-text-fill: rgba(255, 255, 255, 0.4);
     -fx-font-size: 11px;
     -fx-font-weight: bold;
-    -fx-padding: 15px 0 5px 16px; /* Espaciado para que no esté pegado */
-    -fx-letter-spacing: 1.2px;    /* Un toque de separación de letras queda muy pro */
+    -fx-padding: 15px 0 5px 16px;
+    -fx-letter-spacing: 1.2px;
 }
 
-/* Opcional: Si quieres que el texto de AppLoans se destaque más */
 .sidebar-logo-text {
     -fx-text-fill: white;
     -fx-font-size: 20px;
@@ -548,13 +551,6 @@
 }
 .text-danger { -fx-text-fill: -danger; }
 
-
-/* ═══════════════════════════════════════════════════════════════════
-   ADICIONES AL ARCHIVO: src/main/resources/css/style.css
-   Agregar al final del archivo existente.
-   Nuevos bloques: Login, Sidebar actualizada, Content Area
-═══════════════════════════════════════════════════════════════════ */
-
 /* ─── LOGIN: Root ────────────────────────────────────────────────── */
 .login-root {
     -fx-background-color: -white;
@@ -573,6 +569,7 @@
 .brand-icon-wrap {
     -fx-background-color: rgba(255,255,255,0.15);
     -fx-background-radius: 14px;
+    -fx-border-radius: 14px;
     -fx-min-width: 64px;
     -fx-min-height: 64px;
     -fx-max-width: 64px;
@@ -610,6 +607,7 @@
 .feature-icon-wrap {
     -fx-background-color: rgba(255,255,255,0.12);
     -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
     -fx-min-width: 36px;
     -fx-min-height: 36px;
     -fx-max-width: 36px;
@@ -669,7 +667,6 @@
 /* ─── Campos del formulario de login ────────────────────────────── */
 .login-fields { -fx-padding: 0; }
 
-/* Wrapper para campo con ícono a la izquierda */
 .input-icon-wrap {
     -fx-border-color: -gray-400;
     -fx-border-radius: -radius-sm;
@@ -692,7 +689,6 @@
     -fx-alignment: center;
 }
 
-/* TextField dentro del wrapper con ícono */
 .input-with-icon {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
@@ -707,7 +703,6 @@
     -fx-effect: none;
 }
 
-/* ─── Link "¿Olvidaste tu contraseña?" ──────────────────────────── */
 .forgot-link {
     -fx-font-size: 12px;
     -fx-text-fill: -primary;
@@ -715,7 +710,6 @@
 }
 .forgot-link:hover { -fx-underline: true; }
 
-/* ─── Botón de login ─────────────────────────────────────────────── */
 .btn-login {
     -fx-font-size: 15px;
     -fx-padding: 12px 20px;
@@ -723,7 +717,6 @@
     -fx-border-radius: -radius-sm;
 }
 
-/* ─── Hint de demo ───────────────────────────────────────────────── */
 .demo-hint {
     -fx-font-size: 12px;
     -fx-text-fill: -gray-500;
@@ -736,14 +729,11 @@
     -fx-alignment: center;
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   SIDEBAR — Actualizaciones y nuevos estilos
-═══════════════════════════════════════════════════════════════════ */
-
 /* Logo icon en sidebar */
 .sidebar-logo-icon {
     -fx-background-color: -primary;
     -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
     -fx-min-width: 40px;
     -fx-min-height: 40px;
     -fx-max-width: 40px;
@@ -794,21 +784,19 @@
     -fx-letter-spacing: 0.5px;
 }
 
-/* Botón de logout (solo ícono, sin fondo) */
 .btn-logout {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
     -fx-cursor: hand;
     -fx-padding: 6px 8px;
     -fx-background-radius: -radius-sm;
+    -fx-border-radius: -radius-sm;
 }
 .btn-logout:hover {
     -fx-background-color: rgba(255,255,255,0.08);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   CONTENT AREA — Área central de contenido
-═══════════════════════════════════════════════════════════════════ */
+/* ─── CONTENT AREA ─────────────────────────────────────────── */
 .content-area {
     -fx-background-color: -gray-50;
 }
@@ -816,6 +804,7 @@
 .card-summary {
     -fx-background-color: -primary;
     -fx-background-radius: 12px;
+    -fx-border-radius: 12px;
     -fx-padding: 20px;
     -fx-effect: -shadow-primary;
 }
@@ -825,52 +814,29 @@
 .lbl-summary-val { -fx-text-fill: white; -fx-font-weight: 600; }
 .lbl-summary-val-green { -fx-text-fill: #2ecc71; -fx-font-weight: 800; }
 
-/* ═══════════════════════════════════════════════════════════════════
-   TRADUCCIONES — Textos que el usuario ve en Español
-   (estos estilos no cambian; son recordatorio de convención)
-
-   Labels / Buttons / Placeholders en ESPAÑOL:
-     ✔ "Gestión de Clientes"   en lugar de "Customer Management"
-     ✔ "Nuevo Cliente"         en lugar de "New Customer"
-     ✔ "Buscar por nombre..."  en lugar de "Search by name..."
-     ✔ "Ingresar al Sistema"   en lugar de "Log In"
-     ✔ "Cerrar Sesión"         en lugar de "Logout"
-     ✔ "Guardar"               en lugar de "Save"
-     ✔ "Cancelar"              en lugar de "Cancel"
-     ✔ "Editar"                en lugar de "Edit"
-     ✔ "Eliminar"              en lugar de "Delete"
-
-   Código (clases, métodos, variables) en INGLÉS:
-     ✔ handleSave(), handleLogin(), CustomerDAO, findAll()
-     ✔ txtUsername, btnSave, lblError
-═══════════════════════════════════════════════════════════════════ */
-
 /* ─── BOTONES DE ACCIÓN EN TABLAS (Simétricos) ──────────────── */
 .btn-action {
-    -fx-background-color: -gray-100;     /* Fondo gris claro idéntico */
-    -fx-background-radius: -radius-sm;   /* Usa tu token de 4px */
-    -fx-border-color: -gray-300;         /* Borde gris sutil */
+    -fx-background-color: -gray-100;
+    -fx-background-radius: -radius-sm;
+    -fx-border-color: -gray-300;
     -fx-border-radius: -radius-sm;
     -fx-border-width: 1px;
     -fx-cursor: hand;
-    -fx-padding: 5px 8px;                /* Controla el alto y ancho exacto del botón */
+    -fx-padding: 5px 8px;
     -fx-alignment: center;
 }
 
-/* Efecto hover compartido */
 .btn-action:hover {
     -fx-background-color: -gray-200;
     -fx-border-color: -gray-400;
 }
 
-/* Hover específico para el botón de Ver (Ojo tintado de azul) */
 .btn-action-view:hover {
-    -fx-background-color: rgba(37, 70, 126, 0.08); /* 8% de tu color -primary */
+    -fx-background-color: rgba(37, 70, 126, 0.08);
     -fx-border-color: -primary-light;
 }
 
-/* Hover específico para el botón de Editar (Lápiz tintado de verde) */
 .btn-action-edit:hover {
-    -fx-background-color: -success-light;          /* Fondo verde suave predefinido */
+    -fx-background-color: -success-light;
     -fx-border-color: -success;
 }
