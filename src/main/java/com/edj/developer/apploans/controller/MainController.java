@@ -52,6 +52,7 @@ public class MainController implements Initializable {
     private static final String VIEW_PRESTAMOS      = "prestamos";
     private static final String VIEW_REPORTES       = "reportes";
     private static final String VIEW_CONFIGURACION  = "configuracion";
+    private static final String VIEW_PRODUCTOS = "productos";
 
     // ─── Rutas FXML ───────────────────────────────────────────────────────
     private static final Map<String, String> FXML_ROUTES = Map.of(
@@ -59,7 +60,8 @@ public class MainController implements Initializable {
             VIEW_CLIENTES,      "/fxml/CustomerList.fxml",
             VIEW_PRESTAMOS,     "/fxml/LoanListView.fxml",
             VIEW_REPORTES,      "/fxml/ReportsView.fxml",
-            VIEW_CONFIGURACION, "/fxml/SettingsView.fxml"
+            VIEW_CONFIGURACION, "/fxml/SettingsView.fxml",
+            VIEW_PRODUCTOS, "/fxml/ProductListView.fxml"
     );
 
     // ─── FXML – Sidebar ────────────────────────────────────────────────────
@@ -75,6 +77,7 @@ public class MainController implements Initializable {
     @FXML private Button btnPrestamos;
     @FXML private Button btnReportes;
     @FXML private Button btnConfiguracion;
+    @FXML private Button btnProductos;
 
     // ─── Estado interno ───────────────────────────────────────────────────
     private final Map<String, Parent> viewCache = new HashMap<>();
@@ -89,7 +92,7 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         navButtons = List.of(
-                btnDashboard, btnClientes, btnPrestamos, btnReportes, btnConfiguracion
+                btnDashboard, btnClientes, btnPrestamos, btnReportes, btnConfiguracion, btnProductos
         );
 
         Platform.runLater(() -> {
@@ -149,6 +152,7 @@ public class MainController implements Initializable {
     @FXML private void handleNavPrestamos()     { navigateTo(VIEW_PRESTAMOS,     btnPrestamos);     }
     @FXML private void handleNavReportes()      { navigateTo(VIEW_REPORTES,      btnReportes);      }
     @FXML private void handleNavConfiguracion() { navigateTo(VIEW_CONFIGURACION, btnConfiguracion); }
+    @FXML private void handleNavProductos() { navigateTo(VIEW_PRODUCTOS, btnProductos); }
 
     /**
      * Maneja el clic en el botón de salida, solicitando confirmación antes de cerrar.

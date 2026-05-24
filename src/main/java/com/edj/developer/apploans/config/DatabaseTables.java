@@ -87,4 +87,47 @@ public final class DatabaseTables {
             FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE
         )
         """;
+
+    //Productos
+    public static final String CREATE_PRODUCTS_TABLE = """
+    CREATE TABLE IF NOT EXISTS products (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        name         TEXT    NOT NULL,
+        description  TEXT,
+        stock        INTEGER NOT NULL DEFAULT 0,
+        base_price   REAL    NOT NULL DEFAULT 0.0,
+        created_at   TEXT    DEFAULT CURRENT_TIMESTAMP
+    )
+    """;
+
+    public static final String CREATE_SALES_TABLE = """
+    CREATE TABLE IF NOT EXISTS sales (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_id   INTEGER NOT NULL,
+        product_id    INTEGER NOT NULL,
+        selling_price REAL    NOT NULL,
+        interest_rate REAL    NOT NULL,
+        total_amount  REAL    NOT NULL,
+        installments  INTEGER NOT NULL,
+        frequency     TEXT    NOT NULL,
+        start_date    TEXT    NOT NULL,
+        status        TEXT    DEFAULT 'ACTIVE',
+        created_at    TEXT    DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (customer_id) REFERENCES customers(id),
+        FOREIGN KEY (product_id)  REFERENCES products(id)
+    )
+    """;
+
+    public static final String CREATE_SALES_PAYMENTS_TABLE = """
+    CREATE TABLE IF NOT EXISTS sales_payments (
+        id             INTEGER PRIMARY KEY AUTOINCREMENT,
+        sale_id        INTEGER NOT NULL,
+        installment_no INTEGER NOT NULL,
+        amount         REAL    NOT NULL,
+        due_date       TEXT    NOT NULL,
+        status         TEXT    DEFAULT 'PENDING',
+        paid_at        TEXT,
+        FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
+    )
+    """;
 }

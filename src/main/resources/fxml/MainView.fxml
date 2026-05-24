@@ -99,6 +99,21 @@
                 </graphic>
             </Button>
 
+            <!-- ── Sección: Productos ── -->
+            <Region prefHeight="4"/>
+            <Label text="PRODUCTOS" styleClass="nav-section-label"/>
+
+            <Button fx:id="btnProductos"
+                    text="Productos"
+                    styleClass="nav-item"
+                    onAction="#handleNavProductos"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-boxes" iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
             <!-- ── Sección: Sistema ── -->
             <Region prefHeight="4"/>
             <Label text="SISTEMA" styleClass="nav-section-label"/>

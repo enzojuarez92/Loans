@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.edj.developer.apploans.controller.ProductFormController"
+      prefWidth="450.0"
+      spacing="0"
+      style="-fx-background-color: white;">
+
+    <HBox alignment="CENTER_LEFT" spacing="12" style="-fx-background-color: #F8F9FA; -fx-padding: 16; -fx-border-color: #DEE2E6; -fx-border-width: 0 0 1 0;">
+        <StackPane style="-fx-background-color: #E9ECEF; -fx-background-radius: 6; -fx-padding: 8;">
+            <FontIcon fx:id="iconHeader" iconLiteral="fas-box" iconSize="18" iconColor="#495057"/>
+        </StackPane>
+        <VBox spacing="2">
+            <Label fx:id="lblTitle" text="Nuevo Producto" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #212529;"/>
+            <Label text="Complete los campos requeridos del inventario." style="-fx-font-size: 12px; -fx-text-fill: #6C757D;"/>
+        </VBox>
+    </HBox>
+
+    <GridPane hgap="16" vgap="14" style="-fx-padding: 20;">
+        <columnConstraints>
+            <ColumnConstraints hgrow="NEVER" minWidth="100" />
+            <ColumnConstraints hgrow="ALWAYS" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints vgrow="NEVER" />
+            <RowConstraints vgrow="NEVER" />
+            <RowConstraints vgrow="NEVER" />
+            <RowConstraints vgrow="NEVER" />
+        </rowConstraints>
+
+        <Label text="Nombre *:" style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+        <TextField fx:id="txtName" promptText="Ej: Celular Samsung A54" styleClass="form-control" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+        <Label text="Descripción:" style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+        <TextArea fx:id="txtDescription" prefHeight="70" promptText="Detalles del artículo, marca, color..." wrapText="true" styleClass="form-control" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+        <Label text="Stock Inicial *:" style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+        <Spinner fx:id="spnStock" editable="true" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+        <Label text="Precio Base *:" style="-fx-font-weight: bold; -fx-text-fill: #495057;" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+        <TextField fx:id="txtBasePrice" promptText="0.00" styleClass="form-control" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+    </GridPane>
+
+    <HBox alignment="CENTER_RIGHT" spacing="12" style="-fx-background-color: #F8F9FA; -fx-padding: 14; -fx-border-color: #DEE2E6; -fx-border-width: 1 0 0 0;">
+        <Button onAction="#handleCancel" text="Cancelar" styleClass="btn,btn-secondary" style="-fx-padding: 7 14;"/>
+        <Button fx:id="btnSave" onAction="#handleSave" text="Guardar" styleClass="btn,btn-primary" style="-fx-padding: 7 14;">
+            <graphic>
+                <FontIcon iconLiteral="fas-save" iconSize="13" iconColor="white"/>
+            </graphic>
+        </Button>
+    </HBox>
+</VBox>

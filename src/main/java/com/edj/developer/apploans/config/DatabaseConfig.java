@@ -12,9 +12,9 @@ import java.sql.Statement;
  * DatabaseConfig
  *
  * Responsabilidades:
- *  1. Proveer conexiones SQLite via getConnection()
- *  2. Inicializar el schema (CREATE TABLE IF NOT EXISTS)
- *  3. Sembrar el usuario admin por defecto (seed)
+ * 1. Proveer conexiones SQLite via getConnection()
+ * 2. Inicializar el schema (CREATE TABLE IF NOT EXISTS)
+ * 3. Sembrar el usuario admin por defecto (seed)
  */
 public final class DatabaseConfig {
 
@@ -54,13 +54,24 @@ public final class DatabaseConfig {
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
 
+            // Habilitamos soporte de llaves foráneas en SQLite para esta conexión de inicialización
+            stmt.execute("PRAGMA foreign_keys = ON;");
+
+            // Tablas Base del Sistema
             stmt.execute(DatabaseTables.CREATE_CONFIG_TABLE);
             stmt.execute(DatabaseTables.CREATE_USERS_TABLE);
             stmt.execute(DatabaseTables.CREATE_CUSTOMERS_TABLE);
             stmt.execute(DatabaseTables.CREATE_CONFIG_AMOUNTS_TABLE);
             stmt.execute(DatabaseTables.CREATE_CONFIG_FREQUENCIES_TABLE);
+
+            // Módulo de Préstamos en Efectivo
             stmt.execute(DatabaseTables.CREATE_LOANS_TABLE);
             stmt.execute(DatabaseTables.CREATE_LOAN_PAYMENTS_TABLE);
+
+            // Módulo de Productos y Ventas (¡Agregados acá!)
+            stmt.execute(DatabaseTables.CREATE_PRODUCTS_TABLE);
+            stmt.execute(DatabaseTables.CREATE_SALES_TABLE);
+            stmt.execute(DatabaseTables.CREATE_SALES_PAYMENTS_TABLE);
 
             log.info("Tables verified/created successfully.");
         } catch (SQLException e) {
@@ -91,6 +102,7 @@ public final class DatabaseConfig {
         }
     }
 
+    /** Configuración por defecto de la aplicación */
     private static void seedDefaultConfig() {
         String checkSql = "SELECT COUNT(*) FROM config";
         String insertSql = "INSERT INTO config (business_name) VALUES ('AppLoans')";
