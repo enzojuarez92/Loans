@@ -1,9 +1,7 @@
 package com.edj.developer.apploans.controller;
 
 import com.edj.developer.apploans.config.DatabaseConfig;
-import com.edj.developer.apploans.model.User;
 import com.edj.developer.apploans.util.AlertHelper;
-import com.edj.developer.apploans.util.SessionManager;
 import javafx.animation.FadeTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -17,7 +15,6 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +49,9 @@ public class MainController implements Initializable {
     private static final String VIEW_PRESTAMOS      = "prestamos";
     private static final String VIEW_REPORTES       = "reportes";
     private static final String VIEW_CONFIGURACION  = "configuracion";
-    private static final String VIEW_PRODUCTOS = "productos";
+    private static final String VIEW_PRODUCTOS      = "productos";
+    private static final String VIEW_VENTAS_LIST    = "ventas";
+    private static final String VIEW_VENTAS_FORM    = "sale_form";
 
     // ─── Rutas FXML ───────────────────────────────────────────────────────
     private static final Map<String, String> FXML_ROUTES = Map.of(
@@ -61,7 +60,9 @@ public class MainController implements Initializable {
             VIEW_PRESTAMOS,     "/fxml/LoanListView.fxml",
             VIEW_REPORTES,      "/fxml/ReportsView.fxml",
             VIEW_CONFIGURACION, "/fxml/SettingsView.fxml",
-            VIEW_PRODUCTOS, "/fxml/ProductListView.fxml"
+            VIEW_PRODUCTOS,     "/fxml/ProductListView.fxml",
+            VIEW_VENTAS_LIST,   "/fxml/SaleListView.fxml",
+            VIEW_VENTAS_FORM,   "/fxml/SaleFormView.fxml"
     );
 
     // ─── FXML – Sidebar ────────────────────────────────────────────────────
@@ -78,6 +79,7 @@ public class MainController implements Initializable {
     @FXML private Button btnReportes;
     @FXML private Button btnConfiguracion;
     @FXML private Button btnProductos;
+    @FXML private Button btnVentas; // Vinculado a fx:id="btnVentas" del FXML
 
     // ─── Estado interno ───────────────────────────────────────────────────
     private final Map<String, Parent> viewCache = new HashMap<>();
@@ -92,7 +94,7 @@ public class MainController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         navButtons = List.of(
-                btnDashboard, btnClientes, btnPrestamos, btnReportes, btnConfiguracion, btnProductos
+                btnDashboard, btnClientes, btnPrestamos, btnReportes, btnConfiguracion, btnProductos, btnVentas
         );
 
         Platform.runLater(() -> {
@@ -152,7 +154,8 @@ public class MainController implements Initializable {
     @FXML private void handleNavPrestamos()     { navigateTo(VIEW_PRESTAMOS,     btnPrestamos);     }
     @FXML private void handleNavReportes()      { navigateTo(VIEW_REPORTES,      btnReportes);      }
     @FXML private void handleNavConfiguracion() { navigateTo(VIEW_CONFIGURACION, btnConfiguracion); }
-    @FXML private void handleNavProductos() { navigateTo(VIEW_PRODUCTOS, btnProductos); }
+    @FXML private void handleNavProductos()     { navigateTo(VIEW_PRODUCTOS,     btnProductos);     }
+    @FXML private void handleNavVentas()        { navigateTo(VIEW_VENTAS_LIST,   btnVentas);        }
 
     /**
      * Maneja el clic en el botón de salida, solicitando confirmación antes de cerrar.
@@ -165,7 +168,6 @@ public class MainController implements Initializable {
                 "Se guardarán todos tus cambios actuales."
         );
 
-        // Evaluamos si el resultado está presente y si el tipo de dato del botón es OK_DONE
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
             log.info("Finalizando aplicación por solicitud del usuario.");
             Platform.exit();
@@ -186,6 +188,12 @@ public class MainController implements Initializable {
             if (viewCache.containsKey(viewKey)) {
                 viewNode = viewCache.get(viewKey);
                 log.debug("Vista '{}' cargada desde caché", viewKey);
+
+                // Si la vista ya existía en caché y es el listado de ventas, refrescamos la grilla automáticamente
+                if (VIEW_VENTAS_LIST.equals(viewKey)) {
+                    FXMLLoader loader = new FXMLLoader(getClass().getResource(FXML_ROUTES.get(viewKey)));
+                    // Opcional: invocar un método refresh si tenés una interfaz común o referencia directa
+                }
             } else {
                 String fxmlPath = FXML_ROUTES.get(viewKey);
                 if (fxmlPath == null) {
@@ -220,7 +228,14 @@ public class MainController implements Initializable {
             ft.play();
 
             currentView = viewKey;
-            setActiveNavButton(navBtn);
+
+            // Manejo dinámico del foco visual del botón lateral
+            if (navBtn != null) {
+                setActiveNavButton(navBtn);
+            } else if (VIEW_VENTAS_FORM.equals(viewKey)) {
+                // Si entramos al formulario de ventas sueltas, dejamos activo el botón de la sección Ventas
+                setActiveNavButton(btnVentas);
+            }
 
         } catch (Exception e) {
             log.error("Error al navegar a la vista '{}'", viewKey, e);
@@ -233,7 +248,9 @@ public class MainController implements Initializable {
     }
 
     private void setActiveNavButton(Button btn) {
-        navButtons.forEach(b -> b.getStyleClass().remove("active"));
+        navButtons.forEach(b -> {
+            if (b != null) b.getStyleClass().remove("active");
+        });
         if (btn != null && !btn.getStyleClass().contains("active")) {
             btn.getStyleClass().add("active");
         }

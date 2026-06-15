@@ -114,6 +114,21 @@
                 </graphic>
             </Button>
 
+            <!-- ── Sección: Ventas ── -->
+            <Region prefHeight="4"/>
+            <Label text="VENTAS" styleClass="nav-section-label"/>
+
+            <Button fx:id="btnVentas"
+                    text="Ventas"
+                    styleClass="nav-item"
+                    onAction="#handleNavVentas"
+                    mnemonicParsing="false"
+                    maxWidth="Infinity">
+                <graphic>
+                    <FontIcon iconLiteral="fas-shopping-cart" iconSize="15" styleClass="nav-icon"/>
+                </graphic>
+            </Button>
+
             <!-- ── Sección: Sistema ── -->
             <Region prefHeight="4"/>
             <Label text="SISTEMA" styleClass="nav-section-label"/>

@@ -35,12 +35,10 @@
 
         <TableView fx:id="tableReport" prefHeight="500" style="-fx-background-color: white;">
             <columns>
-                <TableColumn fx:id="colNum" prefWidth="40" text="N°" />
-                <TableColumn fx:id="colDate" prefWidth="130" text="VENCIMIENTO" />
-                <TableColumn fx:id="colAmount" prefWidth="100" text="MONTO" />
-                <TableColumn fx:id="colPaid" prefWidth="100" text="PAGADO" />
-                <TableColumn fx:id="colBalance" prefWidth="100" text="SALDO" />
-                <TableColumn fx:id="colStatus" prefWidth="120" text="ESTADO" />
+                <TableColumn fx:id="colNum" prefWidth="60" text="N° REC." style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colDate" prefWidth="180" text="FECHA DE PAGO" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colAmount" prefWidth="180" text="MONTO ENTREGADO" style="-fx-alignment: CENTER_RIGHT;"/>
+                <TableColumn fx:id="colNotes" prefWidth="250" text="DETALLE / CONCEPTO" style="-fx-alignment: CENTER;"/>
             </columns>
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />

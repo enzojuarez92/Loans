@@ -72,6 +72,7 @@ public final class DatabaseConfig {
             stmt.execute(DatabaseTables.CREATE_PRODUCTS_TABLE);
             stmt.execute(DatabaseTables.CREATE_SALES_TABLE);
             stmt.execute(DatabaseTables.CREATE_SALES_PAYMENTS_TABLE);
+            stmt.execute(DatabaseTables.CREATE_PAYMENTS_HISTORY_TABLE);
 
             log.info("Tables verified/created successfully.");
         } catch (SQLException e) {

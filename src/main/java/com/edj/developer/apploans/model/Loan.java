@@ -15,6 +15,7 @@ public class Loan {
     private String startDate;
     private String status;
     private List<LoanPayment> payments = new ArrayList<>();
+    private List<LoanReceipt> receipts = new ArrayList<>();
 
     // Constructores, Getters y Setters
     public Loan() {}
@@ -121,6 +122,14 @@ public class Loan {
         public String getDisplayName() {
             return displayName;
         }
+    }
+
+    public List<LoanReceipt> getReceipts() {
+        return receipts;
+    }
+
+    public void setReceipts(List<LoanReceipt> receipts) {
+        this.receipts = receipts;
     }
 
     public enum InstallmentStatus {

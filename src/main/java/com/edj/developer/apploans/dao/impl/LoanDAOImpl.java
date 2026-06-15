@@ -4,6 +4,7 @@ import com.edj.developer.apploans.config.DatabaseConfig;
 import com.edj.developer.apploans.dao.LoanDAO;
 import com.edj.developer.apploans.model.Loan;
 import com.edj.developer.apploans.model.LoanPayment;
+import com.edj.developer.apploans.model.LoanReceipt;
 import com.edj.developer.apploans.model.LoanSummary;
 
 import java.sql.*;
@@ -22,16 +23,13 @@ public class LoanDAOImpl implements LoanDAO {
     public List<Double> findAllSuggestedAmounts() {
         List<Double> amounts = new ArrayList<>();
         String sql = "SELECT value FROM config_amounts;";
-
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 amounts.add(rs.getDouble("value"));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return amounts;
     }
 
@@ -39,22 +37,18 @@ public class LoanDAOImpl implements LoanDAO {
     public List<String> findAllFrequencies() {
         List<String> frequencies = new ArrayList<>();
         String sql = "SELECT name FROM config_frequencies;";
-
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 frequencies.add(rs.getString("name"));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return frequencies;
     }
 
     @Override
     public boolean saveFullLoan(Loan loan) {
-        // Agregamos la columna 'status' explícitamente como 'ACTIVE' al crear el préstamo
         String sqlLoan = "INSERT INTO loans (customer_id, amount, interest_rate, installments, frequency, start_date, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'ACTIVE')";
         String sqlPayment = "INSERT INTO loan_payments (loan_id, installment_number, amount, due_date, status) VALUES (?, ?, ?, ?, 'PENDING')";
 
@@ -64,7 +58,6 @@ public class LoanDAOImpl implements LoanDAO {
             conn.setAutoCommit(false);
 
             int loanId;
-            // 1. Insertar Préstamo
             try (PreparedStatement stmtLoan = conn.prepareStatement(sqlLoan, Statement.RETURN_GENERATED_KEYS)) {
                 stmtLoan.setInt(1, loan.getCustomerId());
                 stmtLoan.setDouble(2, loan.getAmount());
@@ -87,16 +80,13 @@ public class LoanDAOImpl implements LoanDAO {
                 }
             }
 
-            // 2. Insertar Cuotas (Payments)
             try (PreparedStatement stmtPay = conn.prepareStatement(sqlPayment)) {
                 for (LoanPayment p : loan.getPayments()) {
                     stmtPay.setInt(1, loanId);
                     stmtPay.setInt(2, p.getInstallmentNumber());
                     stmtPay.setDouble(3, p.getAmount());
-
                     String dueDate = (p.getDueDate() != null) ? p.getDueDate() : LocalDate.now().toString();
                     stmtPay.setString(4, dueDate);
-
                     stmtPay.addBatch();
                 }
                 stmtPay.executeBatch();
@@ -104,7 +94,6 @@ public class LoanDAOImpl implements LoanDAO {
 
             conn.commit();
             return true;
-
         } catch (SQLException e) {
             if (conn != null) try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             e.printStackTrace();
@@ -117,9 +106,7 @@ public class LoanDAOImpl implements LoanDAO {
     @Override
     public List<Loan> findAll() {
         List<Loan> loans = new ArrayList<>();
-        String sql = "SELECT l.*, c.first_name, c.last_name FROM loans l " +
-                "INNER JOIN customers c ON l.customer_id = c.id ORDER BY l.id DESC";
-
+        String sql = "SELECT l.*, c.first_name, c.last_name FROM loans l INNER JOIN customers c ON l.customer_id = c.id ORDER BY l.id DESC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
@@ -133,50 +120,153 @@ public class LoanDAOImpl implements LoanDAO {
                 loan.setInstallments(rs.getInt("installments"));
                 loan.setFrequency(rs.getString("frequency"));
                 loan.setStartDate(rs.getString("start_date"));
-                loan.setStatus(rs.getString("status")); // Mapeamos el estado correctamente
+                loan.setStatus(rs.getString("status"));
                 loan.setCustomerName(rs.getString("first_name") + " " + rs.getString("last_name"));
                 loans.add(loan);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return loans;
+    }
+
+    @Override
+    public List<Loan> findAllPaged(String search, String statusFilter, int limit, int offset) {
+        List<Loan> list = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("""
+            SELECT l.*, c.first_name, c.last_name 
+            FROM loans l 
+            INNER JOIN customers c ON l.customer_id = c.id 
+            WHERE 1=1
+            """);
+
+        // Buscador Inteligente: Nombre, N° de préstamo (ID), Monto o Monto Total
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("""
+                 AND (
+                     (c.first_name || ' ' || c.last_name) LIKE ? 
+                     OR CAST(l.id AS TEXT) LIKE ? 
+                     OR CAST(l.amount AS TEXT) LIKE ? 
+                     OR CAST(l.total_amount AS TEXT) LIKE ?
+                 )
+                """);
+        }
+        if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
+            sql.append(" AND l.status = ?");
+        }
+
+        sql.append(" ORDER BY l.id DESC LIMIT ? OFFSET ?");
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int idx = 1;
+            if (search != null && !search.trim().isEmpty()) {
+                String filter = "%" + search.trim() + "%";
+                ps.setString(idx++, filter); // Nombre del cliente
+                ps.setString(idx++, filter); // ID del préstamo
+                ps.setString(idx++, filter); // Monto original
+                ps.setString(idx++, filter); // Monto total con intereses
+            }
+            if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
+                ps.setString(idx++, statusFilter);
+            }
+
+            ps.setInt(idx++, limit);
+            ps.setInt(idx, offset);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Loan loan = new Loan();
+                    loan.setId(rs.getInt("id"));
+                    loan.setCustomerId(rs.getInt("customer_id"));
+                    loan.setAmount(rs.getDouble("amount"));
+                    loan.setInterestRate(rs.getDouble("interest_rate"));
+                    loan.setTotalAmount(rs.getDouble("total_amount"));
+                    loan.setInstallments(rs.getInt("installments"));
+                    loan.setFrequency(rs.getString("frequency"));
+                    loan.setStartDate(rs.getString("start_date"));
+                    loan.setStatus(rs.getString("status"));
+                    loan.setCustomerName(rs.getString("first_name") + " " + rs.getString("last_name"));
+                    list.add(loan);
+                }
+            }
+        } catch (SQLException e) { log.error("Error paginando préstamos", e); }
+        return list;
+    }
+
+    @Override
+    public int countLoans(String search, String statusFilter) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT COUNT(*) FROM loans l 
+            INNER JOIN customers c ON l.customer_id = c.id 
+            WHERE 1=1
+            """);
+
+        // Misma lógica exacta de condiciones para el conteo
+        if (search != null && !search.trim().isEmpty()) {
+            sql.append("""
+                 AND (
+                     (c.first_name || ' ' || c.last_name) LIKE ? 
+                     OR CAST(l.id AS TEXT) LIKE ? 
+                     OR CAST(l.amount AS TEXT) LIKE ? 
+                     OR CAST(l.total_amount AS TEXT) LIKE ?
+                 )
+                """);
+        }
+        if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
+            sql.append(" AND l.status = ?");
+        }
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+            int idx = 1;
+            if (search != null && !search.trim().isEmpty()) {
+                String filter = "%" + search.trim() + "%";
+                ps.setString(idx++, filter); // Nombre del cliente
+                ps.setString(idx++, filter); // ID del préstamo
+                ps.setString(idx++, filter); // Monto original
+                ps.setString(idx++, filter); // Monto total con intereses
+            }
+            if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
+                ps.setString(idx++, statusFilter);
+            }
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        } catch (SQLException e) { log.error(e.getMessage()); }
+        return 0;
     }
 
     @Override
     public boolean updatePaymentStatus(int paymentId, String newStatus) {
         String sql = "UPDATE loan_payments SET status = ? WHERE id = ?";
-
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
             pstmt.setString(1, newStatus.toUpperCase());
             pstmt.setInt(2, paymentId);
-
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
-
-        } catch (SQLException e) {
-            System.err.println("Error al actualizar estado del pago: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) { e.printStackTrace(); return false; }
     }
 
+    @Override
     public Loan findFullLoanById(int loanId) {
-        String sqlLoan = "SELECT l.*, c.first_name, c.last_name FROM loans l " +
-                "INNER JOIN customers c ON l.customer_id = c.id WHERE l.id = ?";
+        String sqlLoan = "SELECT l.*, c.first_name, c.last_name FROM loans l INNER JOIN customers c ON l.customer_id = c.id WHERE l.id = ?";
         String sqlPayments = "SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY installment_number ASC";
+        // 💡 NUEVA CONSULTA: Traemos el historial de entregas de este préstamo
+        String sqlHistory = "SELECT id, amount, payment_date, notes FROM payment_history WHERE loan_id = ? ORDER BY id DESC";
 
         Loan loan = null;
 
         try (Connection conn = DatabaseConfig.getConnection()) {
+            // 1. Mapeamos los datos generales del Préstamo
             try (PreparedStatement pstmt = conn.prepareStatement(sqlLoan)) {
                 pstmt.setInt(1, loanId);
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         loan = new Loan();
                         loan.setId(rs.getInt("id"));
+                        loan.setCustomerId(rs.getInt("customer_id"));
                         loan.setAmount(rs.getDouble("amount"));
                         loan.setTotalAmount(rs.getDouble("total_amount"));
                         loan.setInstallments(rs.getInt("installments"));
@@ -189,6 +279,7 @@ public class LoanDAOImpl implements LoanDAO {
             }
 
             if (loan != null) {
+                // 2. Mapeamos el Plan de Cuotas
                 List<LoanPayment> payments = new ArrayList<>();
                 try (PreparedStatement pstmt = conn.prepareStatement(sqlPayments)) {
                     pstmt.setInt(1, loanId);
@@ -203,9 +294,28 @@ public class LoanDAOImpl implements LoanDAO {
                             p.setLoanId(rs.getInt("loan_id"));
                             p.setStatus(rs.getString("status"));
                             p.setPaidAmount(rs.getDouble("paid_amount"));
+                            p.setPaymentDate(rs.getString("payment_date"));
                             payments.add(p);
                         }
                         loan.setPayments(payments);
+                    }
+                }
+
+                // 3. 💡 MAPEAMOS LAS ENTREGAS REALES (HISTORIAL)
+                List<LoanReceipt> receipts = new ArrayList<>();
+                try (PreparedStatement pstmt = conn.prepareStatement(sqlHistory)) {
+                    pstmt.setInt(1, loanId);
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        while (rs.next()) {
+                            LoanReceipt receipt = new LoanReceipt(
+                                    rs.getInt("id"),
+                                    rs.getDouble("amount"),
+                                    rs.getString("payment_date"),
+                                    rs.getString("notes")
+                            );
+                            receipts.add(receipt);
+                        }
+                        loan.setReceipts(receipts); // Se lo inyectamos al préstamo fresco
                     }
                 }
             }
@@ -217,17 +327,22 @@ public class LoanDAOImpl implements LoanDAO {
 
     @Override
     public boolean updatePaymentStatusWithAmount(int paymentId, String newStatus, double paidAmount) {
-        String sqlUpdatePayment = "UPDATE loan_payments SET status = ?, paid_amount = ? WHERE id = ?";
+        // MODIFICADO: Agregamos payment_date con el datetime actual de SQLite
+        String sqlUpdatePayment = """
+        UPDATE loan_payments 
+        SET status = ?, 
+            paid_amount = ?, 
+            payment_date = datetime('now', 'localtime') 
+        WHERE id = ?
+        """;
         String sqlCheckLoan = "SELECT loan_id FROM loan_payments WHERE id = ?";
         String sqlCountPending = "SELECT COUNT(*) FROM loan_payments WHERE loan_id = ? AND status = 'PENDING'";
-        String sqlUpdateLoanStatus = "UPDATE loans SET status = 'COMPLETED' WHERE id = ?"; // Corregido a COMPLETED
+        String sqlUpdateLoanStatus = "UPDATE loans SET status = 'COMPLETED' WHERE id = ?";
 
         try (Connection conn = DatabaseConfig.getConnection()) {
             conn.setAutoCommit(false);
-
             int loanId = -1;
 
-            // 1. Obtener el ID del préstamo
             try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckLoan)) {
                 psCheck.setInt(1, paymentId);
                 try (ResultSet rs = psCheck.executeQuery()) {
@@ -235,15 +350,13 @@ public class LoanDAOImpl implements LoanDAO {
                 }
             }
 
-            // 2. Actualizar la cuota actual
             try (PreparedStatement pstmt = conn.prepareStatement(sqlUpdatePayment)) {
                 pstmt.setString(1, newStatus.toUpperCase());
                 pstmt.setDouble(2, paidAmount);
-                pstmt.setInt(3, paymentId);
+                pstmt.setInt(3, paymentId); // Sigue siendo el parámetro 3 porque el datetime() no usa "?"
                 pstmt.executeUpdate();
             }
 
-            // 3. Verificar si quedan cuotas pendientes para cerrar el préstamo
             if (loanId != -1) {
                 int pendingCount = 0;
                 try (PreparedStatement psCount = conn.prepareStatement(sqlCountPending)) {
@@ -253,7 +366,6 @@ public class LoanDAOImpl implements LoanDAO {
                     }
                 }
 
-                // 4. Si da 0, el préstamo pasa a COMPLETED de forma automática
                 if (pendingCount == 0) {
                     try (PreparedStatement psUpLoan = conn.prepareStatement(sqlUpdateLoanStatus)) {
                         psUpLoan.setInt(1, loanId);
@@ -264,15 +376,11 @@ public class LoanDAOImpl implements LoanDAO {
 
             conn.commit();
             return true;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
+        } catch (SQLException e) { e.printStackTrace(); return false; }
     }
 
     @Override
     public LoanSummary getSummaryByCustomerId(int customerId) {
-        // Query corregida: Eliminada duplicación de COMPLETED y unificado a mayúsculas estándar
         String sql = """
         SELECT 
             COUNT(l.id) as total,
@@ -291,10 +399,8 @@ public class LoanDAOImpl implements LoanDAO {
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
             pstmt.setInt(1, customerId);
             pstmt.setInt(2, customerId);
-
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     return new LoanSummary(
@@ -305,9 +411,7 @@ public class LoanDAOImpl implements LoanDAO {
                     );
                 }
             }
-        } catch (Exception e) {
-            org.slf4j.LoggerFactory.getLogger(getClass()).error("Error al obtener resumen de préstamos", e);
-        }
+        } catch (Exception e) { log.error("Error al obtener resumen de préstamos", e); }
         return new LoanSummary(0, 0, 0, 0.0);
     }
 
@@ -321,10 +425,8 @@ public class LoanDAOImpl implements LoanDAO {
         WHERE l.customer_id = ? 
         ORDER BY l.id DESC
         """;
-
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-
             stmt.setInt(1, customerId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -334,13 +436,11 @@ public class LoanDAOImpl implements LoanDAO {
                     loan.setTotalAmount(rs.getDouble("total_amount"));
                     loan.setStatus(rs.getString("status"));
                     loan.setStartDate(rs.getString("start_date"));
-                    loan.setInterestRate(rs.getDouble("restante")); // Mapeo temporal del saldo restante
+                    loan.setInterestRate(rs.getDouble("restante"));
                     loans.add(loan);
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return loans;
     }
 
@@ -348,38 +448,182 @@ public class LoanDAOImpl implements LoanDAO {
     public Map<String, Integer> findAllFrequenciesWithIntervals() {
         Map<String, Integer> frequencies = new HashMap<>();
         String sql = "SELECT name, days_interval FROM config_frequencies;";
-
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 frequencies.put(rs.getString("name").toUpperCase(), rs.getInt("days_interval"));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return frequencies;
     }
 
     @Override
     public void checkAndUpdateOverdueInstallments() {
-        // Usamos date(due_date) para obligar a SQLite a interpretarlo de manera correcta
         String sql = """
         UPDATE loan_payments 
         SET status = 'OVERDUE' 
         WHERE (status = 'PENDING' OR status = 'PARTIAL' OR status IS NULL) 
           AND date(due_date) < date('now', 'localtime')
         """;
-
-        try (java.sql.Connection conn = com.edj.developer.apploans.config.DatabaseConfig.getConnection();
-             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             int rowsAffected = pstmt.executeUpdate();
             if (rowsAffected > 0) {
                 log.info("Se actualizaron " + rowsAffected + " cuotas a estado VENCIDA (OVERDUE).");
             }
-        } catch (java.sql.SQLException e) {
+        } catch (SQLException e) { e.printStackTrace(); }
+    }
+
+    @Override
+    public boolean cancelLoan(int loanId) {
+        String sqlUpdateLoan = "UPDATE loans SET status = 'CANCELED' WHERE id = ?";
+        String sqlUpdatePayments = "UPDATE loan_payments SET status = 'CANCELED' WHERE loan_id = ? AND status = 'PENDING'";
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            conn.setAutoCommit(false); // Iniciamos transacción por seguridad
+
+            try (PreparedStatement psLoan = conn.prepareStatement(sqlUpdateLoan)) {
+                psLoan.setInt(1, loanId);
+                psLoan.executeUpdate();
+            }
+
+            try (PreparedStatement psPayments = conn.prepareStatement(sqlUpdatePayments)) {
+                psPayments.setInt(1, loanId);
+                psPayments.executeUpdate();
+            }
+
+            conn.commit(); // Confirmamos los cambios si todo salió joya
+            return true;
+        } catch (SQLException e) {
             e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean processCascadePayment(int loanId, double totalAmount, String notes) {
+        String sqlInsertHistory = """
+        INSERT INTO payment_history (loan_id, amount, payment_date, notes) 
+        VALUES (?, ?, datetime('now', 'localtime'), ?)
+        """;
+
+        String sqlSelectPayments = """
+        SELECT id, amount, paid_amount 
+        FROM loan_payments 
+        WHERE loan_id = ? AND status != 'PAID' AND status != 'CANCELED'
+        ORDER BY installment_number ASC
+        """;
+
+        String sqlUpdatePayment = """
+        UPDATE loan_payments 
+        SET paid_amount = ?, 
+            status = ?, 
+            payment_date = datetime('now', 'localtime') 
+        WHERE id = ?
+        """;
+
+        String sqlCountPending = "SELECT COUNT(*) FROM loan_payments WHERE loan_id = ? AND status != 'PAID' AND status != 'CANCELED'";
+        String sqlUpdateLoanStatus = "UPDATE loans SET status = 'COMPLETED' WHERE id = ?";
+
+        // 💡 Estructura auxiliar para guardar las cuotas temporales en memoria
+        class TempCuota {
+            int id;
+            double amount;
+            double paidAmount;
+            TempCuota(int id, double amount, double paidAmount) {
+                this.id = id; this.amount = amount; this.paidAmount = paidAmount;
+            }
+        }
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false); // 🔒 Transacción segura
+
+            // 1. Insertar el recibo en el historial de pagos
+            try (PreparedStatement psHist = conn.prepareStatement(sqlInsertHistory)) {
+                psHist.setInt(1, loanId);
+                psHist.setDouble(2, totalAmount);
+                psHist.setString(3, (notes == null || notes.trim().isEmpty()) ? "Cobro en cascada" : notes.trim());
+                psHist.executeUpdate();
+            }
+
+            // 2. LEER LAS CUOTAS EN MEMORIA (Para liberar el driver de SQLite de inmediato)
+            List<TempCuota> cuotasPendientes = new ArrayList<>();
+            try (PreparedStatement psSel = conn.prepareStatement(sqlSelectPayments)) {
+                psSel.setInt(1, loanId);
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        cuotasPendientes.add(new TempCuota(
+                                rs.getInt("id"),
+                                rs.getDouble("amount"),
+                                rs.getDouble("paid_amount")
+                        ));
+                    }
+                } // El ResultSet y el PreparedStatement se cierran ACÁ automáticamente
+            }
+
+            // 3. PROCESAR EL DERRAME EN CASCADA USANDO LA LISTA EN MEMORIA
+            double dineroRestante = totalAmount;
+
+            try (PreparedStatement psUpPay = conn.prepareStatement(sqlUpdatePayment)) {
+                for (TempCuota cuota : cuotasPendientes) {
+                    if (dineroRestante <= 0) break;
+
+                    double deudoCuota = cuota.amount - cuota.paidAmount;
+
+                    if (dineroRestante >= deudoCuota) {
+                        dineroRestante -= deudoCuota;
+
+                        psUpPay.setDouble(1, cuota.amount);
+                        psUpPay.setString(2, "PAID");
+                        psUpPay.setInt(3, cuota.id);
+                        psUpPay.addBatch();
+                    } else {
+                        double nuevoPaidAmount = cuota.paidAmount + dineroRestante;
+                        dineroRestante = 0;
+
+                        psUpPay.setDouble(1, nuevoPaidAmount);
+                        psUpPay.setString(2, "PARTIAL");
+                        psUpPay.setInt(3, cuota.id);
+                        psUpPay.addBatch();
+                    }
+                }
+
+                // Si la lista no estaba vacía y se agregaron comandos, ejecutamos el lote
+                if (!cuotasPendientes.isEmpty()) {
+                    psUpPay.executeBatch();
+                }
+            }
+
+            // 4. Chequear si cerramos el préstamo completo
+            int pendingCount = 0;
+            try (PreparedStatement psCount = conn.prepareStatement(sqlCountPending)) {
+                psCount.setInt(1, loanId);
+                try (ResultSet rs = psCount.executeQuery()) {
+                    if (rs.next()) pendingCount = rs.getInt(1);
+                }
+            }
+
+            if (pendingCount == 0) {
+                try (PreparedStatement psUpLoan = conn.prepareStatement(sqlUpdateLoanStatus)) {
+                    psUpLoan.setInt(1, loanId);
+                    psUpLoan.executeUpdate();
+                }
+            }
+
+            conn.commit(); // Éxito total y persistencia atómica
+            return true;
+
+        } catch (SQLException e) {
+            log.error("Cascading payment failed. Rollback executed.", e);
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            return false;
+        } finally {
+            if (conn != null) { try { conn.close(); } catch (SQLException e) { e.printStackTrace(); } }
         }
     }
 }

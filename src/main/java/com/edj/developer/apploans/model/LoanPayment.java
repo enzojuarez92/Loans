@@ -7,7 +7,8 @@ public class LoanPayment {
     private double amount;
     private double paidAmount;
     private String dueDate;
-    private String status; // PENDING, PAID
+    private String status;
+    private String paymentDate;
 
     public LoanPayment(int installmentNumber, double amount, String dueDate) {
         this.installmentNumber = installmentNumber;
@@ -81,5 +82,13 @@ public class LoanPayment {
         } catch (Exception e) {
             return this.status; // Por si viene nulo o vacío
         }
+    }
+
+    public String getPaymentDate() {
+        return paymentDate;
+    }
+
+    public void setPaymentDate(String paymentDate) {
+        this.paymentDate = paymentDate;
     }
 }

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+<?import java.net.URL?>
+
+<VBox xmlns="http://javafx.com/javafx/21"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.edj.developer.apploans.controller.SaleFormController"
+      styleClass="view-root"
+      spacing="0"
+      prefWidth="1000.0" prefHeight="700.0">
+
+    <stylesheets>
+        <URL value="@/css/style.css" />
+    </stylesheets>
+
+    <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+        <VBox alignment="CENTER_LEFT" spacing="2">
+            <Label text="Nueva Venta Financiera" styleClass="topbar-title"/>
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <Label text="Ventas" styleClass="breadcrumb-link"/>
+                <Label text="/" styleClass="text-muted"/>
+                <Label text="Otorgamiento de Artículo" styleClass="text-muted,text-sm"/>
+            </HBox>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="Volver al Listado" onAction="#handleCancel" styleClass="btn,btn-secondary"/>
+    </HBox>
+
+    <HBox spacing="20" VBox.vgrow="ALWAYS" style="-fx-padding: 20 24;">
+
+        <VBox HBox.hgrow="ALWAYS" styleClass="card" spacing="0">
+            <HBox styleClass="card-header" spacing="10" alignment="CENTER_LEFT">
+                <FontIcon iconLiteral="fas-calculator" iconSize="15" iconColor="#495057"/>
+                <Label text="Datos de la Operación" styleClass="card-title"/>
+            </HBox>
+
+            <VBox spacing="20" style="-fx-padding: 25;">
+                <GridPane hgap="20" vgap="20">
+                    <columnConstraints>
+                        <ColumnConstraints percentWidth="50"/>
+                        <ColumnConstraints percentWidth="50"/>
+                    </columnConstraints>
+
+                    <VBox spacing="8" GridPane.rowIndex="0" GridPane.columnIndex="0">
+                        <Label text="Seleccionar Cliente" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbCustomer" maxWidth="Infinity" promptText="Busque cliente..." editable="true" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <Label text="Fecha de Inicio" styleClass="form-label"/>
+                        <DatePicker fx:id="dpStartDate" maxWidth="Infinity" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                        <Label text="Seleccionar Producto" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbProduct" maxWidth="Infinity" promptText="Seleccione artículo..." styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                        <Label text="Frecuencia de Cobro" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbFrequency" maxWidth="Infinity" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="0">
+                        <Label text="Cantidad de Cuotas" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbInstallments" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                    </VBox>
+
+                    <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                        <Label text="Interés de Financiación (%)" styleClass="form-label"/>
+                        <ComboBox fx:id="cmbInterest" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                    </VBox>
+                </GridPane>
+
+                <Region VBox.vgrow="ALWAYS"/>
+                <Separator/>
+                <HBox alignment="CENTER_RIGHT">
+                    <Label text="El interés se calculará de forma directa sobre el precio base del producto" styleClass="text-muted" style="-fx-font-style: italic;"/>
+                </HBox>
+            </VBox>
+        </VBox>
+
+        <VBox prefWidth="340" spacing="15" styleClass="card-summary" alignment="TOP_CENTER" style="-fx-background-color: #2c3e50; -fx-background-radius: 8; -fx-padding: 20;">
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <FontIcon iconLiteral="fas-receipt" iconSize="14" iconColor="white"/>
+                <Label text="RESUMEN FINANCIERO" styleClass="section-title-white" style="-fx-text-fill: white; -fx-font-weight: bold;"/>
+            </HBox>
+
+            <VBox spacing="5" alignment="CENTER" style="-fx-padding: 30 0;">
+                <Label text="TOTAL LIQUIDACIÓN" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                <Label fx:id="lblTotalAmount" text="0,00" styleClass="lbl-total-big" style="-fx-text-fill: white; -fx-font-size: 32; -fx-font-weight: bold;"/>
+            </VBox>
+
+            <VBox spacing="15" style="-fx-background-color: rgba(255,255,255,0.1); -fx-background-radius: 8; -fx-padding: 20;">
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Precio del Artículo:" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblProductPrice" text="0,00" styleClass="lbl-summary-val" style="-fx-text-fill: white;"/>
+                </HBox>
+                <Separator opacity="0.2"/>
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Distribución:" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblInstallmentSummary" text="0 cuotas de $ 0,00" styleClass="lbl-summary-val" style="-fx-text-fill: white;"/>
+                </HBox>
+                <Separator opacity="0.2"/>
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="Recargo Cargado:" styleClass="lbl-summary-light" style="-fx-text-fill: #ecf0f1;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="lblInterestEarned" text="0,00" styleClass="lbl-summary-val-green" style="-fx-text-fill: #2ecc71; -fx-font-weight: bold;"/>
+                </HBox>
+            </VBox>
+
+            <Region VBox.vgrow="ALWAYS"/>
+
+            <Button fx:id="btnCreateSale" text="CONFIRMAR VENTA"
+                    onAction="#handleCreateSale" maxWidth="Infinity"
+                    styleClass="btn,btn-primary" prefHeight="45">
+                <graphic>
+                    <FontIcon iconLiteral="fas-check-circle" iconSize="16" iconColor="white"/>
+                </graphic>
+            </Button>
+        </VBox>
+    </HBox>
+</VBox>

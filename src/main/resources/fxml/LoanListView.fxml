@@ -53,7 +53,13 @@
             <FontIcon iconLiteral="fas-list" iconSize="15" iconColor="#495057"/>
             <Label text="Listado de Préstamos" styleClass="card-title"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="txtSearch" promptText="Buscar cliente..." styleClass="search-field" prefWidth="250"/>
+            <TextField fx:id="txtSearch" promptText="Buscar prestamo..." styleClass="search-field" prefWidth="250"/>
+
+            <ComboBox fx:id="cmbStatusFilter"
+                      promptText="Todos los estados"
+                      styleClass="form-control"
+                      prefWidth="160"/>
+
             <Button onAction="#handleRefresh" styleClass="btn,btn-secondary,btn-sm">
                 <graphic><FontIcon iconLiteral="fas-sync-alt"/></graphic>
             </Button>
@@ -68,6 +74,7 @@
                 <TableColumn fx:id="colInstallments" text="PLAN" prefWidth="140" style="-fx-alignment: CENTER;"/>
                 <TableColumn fx:id="colFrequency" text="FRECUENCIA" prefWidth="120" style="-fx-alignment: CENTER;"/>
                 <TableColumn fx:id="colDate" text="FECHA" prefWidth="110" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colStatus" text="ESTADO" prefWidth="100" minWidth="80"/>
                 <TableColumn fx:id="colActions" text="ACCIONES" prefWidth="90" style="-fx-alignment: CENTER;"/>
             </columns>
             <columnResizePolicy>

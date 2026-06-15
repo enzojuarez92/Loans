@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.*?>
+
+<VBox prefWidth="800.0" prefHeight="600.0" spacing="0" styleClass="view-root"
+      xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="com.edj.developer.apploans.controller.SaleDetailController">
+
+    <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+        <VBox alignment="CENTER_LEFT" spacing="2">
+            <Label fx:id="lblCustomerName" text="Cargando Cliente..." styleClass="topbar-title"/>
+            <HBox spacing="6" alignment="CENTER_LEFT">
+                <Label text="Panel Principal" styleClass="breadcrumb-link"/>
+                <Label text="/" styleClass="text-muted"/>
+                <Label text="Ventas" styleClass="breadcrumb-link"/>
+                <Label text="/" styleClass="text-muted"/>
+                <Label text="Detalle de Venta Financiera" styleClass="text-muted text-sm"/>
+            </HBox>
+        </VBox>
+        <Region HBox.hgrow="ALWAYS"/>
+
+        <Button fx:id="btnCancelSale"
+                text="Anular Venta"
+                onAction="#handleCancelSale"
+                styleClass="btn,btn-danger"
+                mnemonicParsing="false"
+                style="-fx-background-color: #dc3545; -fx-text-fill: white;">
+            <graphic>
+                <FontIcon iconLiteral="fas-trash-alt" iconColor="white"/>
+            </graphic>
+        </Button>
+
+        <Button text="Volver"
+                onAction="#handleBack"
+                styleClass="btn,btn-primary"
+                mnemonicParsing="false">
+            <graphic>
+                <FontIcon iconLiteral="fas-arrow-left" iconColor="white"/>
+            </graphic>
+        </Button>
+    </HBox>
+
+    <ScrollPane fitToWidth="true" styleClass="edge-to-edge" VBox.vgrow="ALWAYS">
+        <VBox spacing="20" style="-fx-padding: 20;">
+
+            <HBox spacing="15">
+                <VBox styleClass="stat-card,stat-card-primary" HBox.hgrow="ALWAYS">
+                    <Label text="TOTAL A COBRAR" styleClass="stat-label"/>
+                    <Label fx:id="lblTotalAmount" text="0.00" styleClass="stat-value"/>
+                </VBox>
+                <VBox styleClass="stat-card,stat-card-success" HBox.hgrow="ALWAYS">
+                    <Label text="TOTAL COBRADO" styleClass="stat-label"/>
+                    <Label fx:id="lblPaidAmount" text="0.00" styleClass="stat-value"/>
+                </VBox>
+                <VBox styleClass="stat-card,stat-card-danger" HBox.hgrow="ALWAYS">
+                    <Label text="SALDO PENDIENTE" styleClass="stat-label"/>
+                    <Label fx:id="lblPendingAmount" text="0.00" styleClass="stat-value"/>
+                </VBox>
+            </HBox>
+
+            <VBox styleClass="card" VBox.vgrow="ALWAYS">
+                <HBox styleClass="card-header" spacing="10" alignment="CENTER_LEFT">
+                    <FontIcon iconLiteral="fas-calendar-alt" iconSize="15" iconColor="#495057"/>
+                    <Label fx:id="lblSaleId" text="Venta #000" styleClass="card-title"/>
+                    <Label text=" - " styleClass="card-title" />
+                    <Label fx:id="lblProductName" text="Producto" styleClass="card-title" style="-fx-text-fill: #0d6efd;"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <TableView fx:id="tablePayments" prefHeight="500.0" styleClass="app-table" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="colNumber" text="N°" prefWidth="50" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colDueDate" text="VENCIMIENTO" prefWidth="120" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colAmount" text="TOTAL CUOTA" prefWidth="120" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colPaidAmount" text="PAGADO" prefWidth="120" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colBalance" text="SALDO" prefWidth="120" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colStatus" text="ESTADO" prefWidth="140" style="-fx-alignment: CENTER;"/>
+                        <TableColumn fx:id="colAction" text="ACCION" prefWidth="90" style="-fx-alignment: CENTER;"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                </TableView>
+            </VBox>
+        </VBox>
+    </ScrollPane>
+</VBox>

@@ -124,10 +124,30 @@ public final class DatabaseTables {
         sale_id        INTEGER NOT NULL,
         installment_no INTEGER NOT NULL,
         amount         REAL    NOT NULL,
+        paid_amount    REAL    DEFAULT 0.0,
         due_date       TEXT    NOT NULL,
         status         TEXT    DEFAULT 'PENDING',
         paid_at        TEXT,
         FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE
     )
     """;
+
+    public static final String CREATE_PAYMENTS_HISTORY_TABLE = """
+    CREATE TABLE IF NOT EXISTS payment_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        loan_id INTEGER,
+        sale_id INTEGER,
+        payment_id INTEGER,
+        sale_payment_id INTEGER,
+        amount REAL NOT NULL,
+        payment_date TEXT NOT NULL,
+        notes TEXT,
+        FOREIGN KEY(loan_id) REFERENCES loans(id),
+        FOREIGN KEY(sale_id) REFERENCES sales(id),
+        FOREIGN KEY(payment_id) REFERENCES loan_payments(id),
+        FOREIGN KEY(sale_payment_id) REFERENCES sales_payments(id)
+    )
+    """;
+
+
 }
