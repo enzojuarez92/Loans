@@ -58,22 +58,22 @@
 
                     <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="0">
                         <Label text="Monto del Capital" styleClass="form-label"/>
-                        <ComboBox fx:id="cmbAmount" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                        <ComboBox fx:id="cmbAmount" maxWidth="Infinity" editable="true" styleClass="form-control" promptText="0,00"/>
                     </VBox>
 
                     <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">
                         <Label text="Frecuencia de Pago" styleClass="form-label"/>
-                        <ComboBox fx:id="cmbFrequency" maxWidth="Infinity" styleClass="form-control"/>
+                        <ComboBox fx:id="cmbFrequency" maxWidth="Infinity" styleClass="form-control" promptText="Seleccione frecuencia..."/>
                     </VBox>
 
                     <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="0">
                         <Label text="Cantidad de Cuotas" styleClass="form-label"/>
-                        <ComboBox fx:id="cmbInstallments" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                        <ComboBox fx:id="cmbInstallments" maxWidth="Infinity" styleClass="form-control" promptText="Seleccione..."/>
                     </VBox>
 
                     <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="1">
                         <Label text="Interés Mensual (%)" styleClass="form-label"/>
-                        <ComboBox fx:id="cmbInterest" maxWidth="Infinity" editable="true" styleClass="form-control"/>
+                        <ComboBox fx:id="cmbInterest" maxWidth="Infinity" styleClass="form-control" promptText="Seleccione..."/>
                     </VBox>
                 </GridPane>
 

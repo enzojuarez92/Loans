@@ -66,6 +66,16 @@ public class LoanListController {
         txtSearch.textProperty().addListener((obs, oldText, newText) -> updatePaginationStructure());
         cmbStatusFilter.valueProperty().addListener((obs, oldVal, newVal) -> updatePaginationStructure());
 
+        // ─── 💡 EL VERDADERO TRUCO ULTRA-SEGURO ───
+        // Escuchamos cuando la vista se acopla a la ventana (Scene).
+        // Cada vez que el MainController te mande de vuelta a esta pantalla,
+        // la vista gana una Scene y se dispara este bloque al toque.
+        tableLoans.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                handleRefresh();
+            }
+        });
+
         handleRefresh();
     }
 
@@ -177,8 +187,8 @@ public class LoanListController {
     @FXML
     public void handleRefresh() {
         loanDAO.checkAndUpdateOverdueInstallments();
-        loadStats();
-        updatePaginationStructure();
+        loadStats();                // Recalcula los totales en las tarjetas de arriba
+        updatePaginationStructure(); // Redibuja la tabla y actualiza la paginación de la DB
     }
 
     private String getSelectedStatusDb() {
@@ -223,13 +233,20 @@ public class LoanListController {
     }
 
     private void loadStats() {
-        String totalSql = "SELECT COUNT(*), SUM(amount) FROM loans";
+        // ─── 💡 ARREGLO DE CONSULTA: SEPARAMOS LOS CRÉDITOS ───
+        // El primer COUNT cuenta todos los créditos sin importar el estado.
+        // El segundo SUM suma el dinero del Capital SOLAMENTE de los préstamos que estén 'ACTIVE' (Vigentes/Atrasados)
+        String totalSql = "SELECT COUNT(*), SUM(CASE WHEN UPPER(status) = 'ACTIVE' THEN amount ELSE 0 END) FROM loans";
+
         try (Connection conn = DatabaseConfig.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(totalSql)) {
             if (rs.next()) {
                 lblTotalLoans.setText(String.valueOf(rs.getInt(1)));
-                lblActiveAmount.setText(String.format("$ %,.2f", rs.getDouble(2)));
+
+                // Si no hay préstamos activos, el SUM devuelve null, controlamos eso con un if simple
+                double activeAmount = rs.getDouble(2);
+                lblActiveAmount.setText(String.format("$ %,.2f", activeAmount));
             }
         } catch (Exception e) {
             e.printStackTrace();

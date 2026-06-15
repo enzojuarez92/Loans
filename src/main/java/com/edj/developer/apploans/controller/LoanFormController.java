@@ -4,6 +4,7 @@ import com.edj.developer.apploans.dao.*;
 import com.edj.developer.apploans.dao.impl.*;
 import com.edj.developer.apploans.model.*;
 import com.edj.developer.apploans.util.AlertHelper;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -12,6 +13,8 @@ import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -20,7 +23,7 @@ import java.util.stream.Collectors;
 public class LoanFormController {
 
     @FXML private ComboBox<Customer> cmbCustomer;
-    @FXML private DatePicker dpStartDate; // <-- NUEVO FIELD
+    @FXML private DatePicker dpStartDate;
     @FXML private ComboBox<Double> cmbAmount;
     @FXML private ComboBox<String> cmbFrequency;
     @FXML private ComboBox<Integer> cmbInstallments;
@@ -32,84 +35,199 @@ public class LoanFormController {
     private final CustomerDAO customerDAO = new CustomerDAOImpl();
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+    // Listas globales para el control de los filtros
+    private final ObservableList<Customer> allActiveCustomers = FXCollections.observableArrayList();
+    private final ObservableList<Double> allSuggestedAmounts = FXCollections.observableArrayList();
+
     private Map<String, Integer> frequencyMap = new HashMap<>();
+    private DecimalFormat currencyFormatter;
 
     @FXML
     public void initialize() {
-        dpStartDate.setValue(LocalDate.now()); // <-- Seteamos por defecto el día de hoy
+        dpStartDate.setValue(LocalDate.now());
+        initCurrencyFormatter();
         initConverters();
         loadData();
         setupListeners();
         resetLabels();
     }
 
+    private void initCurrencyFormatter() {
+        // Configuramos formato local: Puntos para miles, coma para decimales
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.getDefault());
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
+        currencyFormatter = new DecimalFormat("$ #,##0.00", symbols);
+    }
+
     private void initConverters() {
+        // Converter de Clientes
         cmbCustomer.setConverter(new StringConverter<>() {
             @Override public String toString(Customer c) { return (c == null) ? "" : c.getFullName() + " (" + c.getDocNumber() + ")"; }
             @Override public Customer fromString(String s) {
-                return cmbCustomer.getItems().stream()
+                return allActiveCustomers.stream()
                         .filter(c -> toString(c).equals(s))
                         .findFirst().orElse(null);
             }
         });
 
-        StringConverter<Double> doubleConv = new StringConverter<>() {
-            @Override public String toString(Double n) { return n == null ? "" : String.valueOf(n); }
-            @Override public Double fromString(String s) {
+        // 💡 NUEVO Converter de Montos con formato estético monetario ($ 100.000,00)
+        cmbAmount.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Double n) {
+                return (n == null || n == 0.0) ? "" : currencyFormatter.format(n);
+            }
+            @Override
+            public Double fromString(String s) {
                 if (s == null || s.isEmpty()) return 0.0;
-                try { return Double.parseDouble(s.replaceAll("[^\\d.]", "")); } catch (Exception e) { return 0.0; }
+                try {
+                    // Limpiamos el signo $, los puntos de miles y cambiamos la coma decimal por un punto de casteo
+                    String clean = s.replaceAll("[^\\d,]", "").replace(",", ".");
+                    return Double.parseDouble(clean);
+                } catch (Exception e) {
+                    return 0.0;
+                }
             }
-        };
-
-        StringConverter<Integer> intConv = new StringConverter<>() {
-            @Override public String toString(Integer n) { return n == null ? "" : String.valueOf(n); }
-            @Override public Integer fromString(String s) {
-                if (s == null || s.isEmpty()) return 0;
-                try { return Integer.parseInt(s.replaceAll("[^\\d]", "")); } catch (Exception e) { return 0; }
-            }
-        };
-
-        cmbAmount.setConverter(doubleConv);
-        cmbInterest.setConverter(doubleConv);
-        cmbInstallments.setConverter(intConv);
+        });
     }
 
     private void loadData() {
+        // 1. Clientes
         List<Customer> actives = customerDAO.findAll().stream()
                 .filter(c -> "ACTIVO".equalsIgnoreCase(c.getStatus()))
                 .collect(Collectors.toList());
-        cmbCustomer.setItems(FXCollections.observableArrayList(actives));
+        allActiveCustomers.setAll(actives);
+        cmbCustomer.setItems(allActiveCustomers);
+        setupCustomerFilter();
 
-        cmbAmount.setItems(FXCollections.observableArrayList(loanDAO.findAllSuggestedAmounts()));
+        // 2. Montos Sugeridos de la DB
+        allSuggestedAmounts.setAll(loanDAO.findAllSuggestedAmounts());
+        cmbAmount.setItems(allSuggestedAmounts);
+        setupAmountFilter(); // 💡 Activamos el filtro en tiempo real para los montos
 
+        // 3. Frecuencias
         frequencyMap = loanDAO.findAllFrequenciesWithIntervals();
         cmbFrequency.setItems(FXCollections.observableArrayList(frequencyMap.keySet()));
 
+        // 4. Intereses y Cuotas
         ObservableList<Double> interests = FXCollections.observableArrayList();
         ObservableList<Integer> installments = FXCollections.observableArrayList();
-
         for (double i = 0; i <= 100; i++) interests.add(i);
         for (int i = 1; i <= 100; i++) installments.add(i);
-
         cmbInterest.setItems(interests);
         cmbInstallments.setItems(installments);
+    }
+
+    private void setupCustomerFilter() {
+        javafx.collections.transformation.FilteredList<Customer> filteredCustomers =
+                new javafx.collections.transformation.FilteredList<>(allActiveCustomers, p -> true);
+
+        cmbCustomer.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> {
+                Customer selected = cmbCustomer.getSelectionModel().getSelectedItem();
+                if (selected != null && cmbCustomer.getConverter().toString(selected).equals(newValue)) return;
+
+                if (newValue == null || newValue.trim().isEmpty()) {
+                    filteredCustomers.setPredicate(p -> true);
+                } else {
+                    String filterText = newValue.toLowerCase().trim();
+                    filteredCustomers.setPredicate(customer -> {
+                        String fullName = (customer.getFullName() != null) ? customer.getFullName().toLowerCase() : "";
+                        String docNumber = (customer.getDocNumber() != null) ? customer.getDocNumber().toLowerCase() : "";
+                        return fullName.contains(filterText) || docNumber.contains(filterText);
+                    });
+                }
+                cmbCustomer.setItems(filteredCustomers);
+                if (!newValue.isEmpty() && !filteredCustomers.isEmpty()) cmbCustomer.show();
+                else cmbCustomer.hide();
+            });
+        });
+
+        cmbCustomer.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal) {
+                String text = cmbCustomer.getEditor().getText();
+                Customer matchingCustomer = allActiveCustomers.stream()
+                        .filter(c -> cmbCustomer.getConverter().toString(c).equals(text))
+                        .findFirst().orElse(null);
+
+                if (matchingCustomer != null) {
+                    cmbCustomer.getSelectionModel().select(matchingCustomer);
+                } else {
+                    if (cmbCustomer.getSelectionModel().getSelectedItem() == null) cmbCustomer.getEditor().clear();
+                }
+                cmbCustomer.setItems(allActiveCustomers);
+            }
+        });
+    }
+
+    // 💡 NUEVO: Motor de filtrado y autopropuesta para los Montos del Capital
+    private void setupAmountFilter() {
+        javafx.collections.transformation.FilteredList<Double> filteredAmounts =
+                new javafx.collections.transformation.FilteredList<>(allSuggestedAmounts, p -> true);
+
+        cmbAmount.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            Platform.runLater(() -> {
+                Double selected = cmbAmount.getSelectionModel().getSelectedItem();
+                if (selected != null && cmbAmount.getConverter().toString(selected).equals(newValue)) return;
+
+                if (newValue == null || newValue.trim().isEmpty()) {
+                    filteredAmounts.setPredicate(p -> true);
+                } else {
+                    // Extraemos solo los dígitos que va metiendo el usuario para comparar limpiamente
+                    String cleanDigits = newValue.replaceAll("[^\\d]", "");
+                    filteredAmounts.setPredicate(amount -> {
+                        String amtStr = String.valueOf(amount.intValue());
+                        return amtStr.contains(cleanDigits);
+                    });
+                }
+                cmbAmount.setItems(filteredAmounts);
+                if (!newValue.isEmpty() && !filteredAmounts.isEmpty()) cmbAmount.show();
+                else cmbAmount.hide();
+            });
+        });
+
+        // 💡 VALIDACIÓN CRÍTICA AL PERDER EL ENFOQUE: No permite registrar si inventan un monto
+        cmbAmount.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal) {
+                String text = cmbAmount.getEditor().getText();
+                Double inputAmount = cmbAmount.getConverter().fromString(text);
+
+                // Buscamos si el monto tipeado coincide exactamente con uno permitido en la lista
+                Double matchingAmount = allSuggestedAmounts.stream()
+                        .filter(a -> Math.abs(a - inputAmount) < 0.01)
+                        .findFirst().orElse(null);
+
+                if (matchingAmount != null) {
+                    cmbAmount.getSelectionModel().select(matchingAmount);
+                } else {
+                    // 🛑 Si el monto NO está en tu lista permitida, se borra el campo para impedir el fraude
+                    cmbAmount.getSelectionModel().clearSelection();
+                    cmbAmount.getEditor().clear();
+                    resetLabels();
+                }
+                cmbAmount.setItems(allSuggestedAmounts);
+            }
+        });
     }
 
     private void setupListeners() {
         Runnable updateAction = this::calculatePreview;
         cmbAmount.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
-        cmbInterest.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
-        cmbInstallments.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
+        cmbInterest.valueProperty().addListener((o, ov, nv) -> updateAction.run());
+        cmbInstallments.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbFrequency.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbCustomer.valueProperty().addListener((o, ov, nv) -> updateAction.run());
-        dpStartDate.valueProperty().addListener((o, ov, nv) -> updateAction.run()); // <-- Listener para recalcular si cambian la fecha
+        dpStartDate.valueProperty().addListener((o, ov, nv) -> updateAction.run());
     }
 
     private void calculatePreview() {
         try {
             double amount = cmbAmount.getConverter().fromString(cmbAmount.getEditor().getText());
-            double interestRate = cmbInterest.getConverter().fromString(cmbInterest.getEditor().getText());
-            int installments = cmbInstallments.getConverter().fromString(cmbInstallments.getEditor().getText());
+
+            // Como quitamos editable, ahora los leemos de forma directa y segura mediante .getValue()
+            if (cmbInterest.getValue() == null || cmbInstallments.getValue() == null) return;
+            double interestRate = cmbInterest.getValue();
+            int installments = cmbInstallments.getValue();
 
             if (amount <= 0 || installments <= 0) { resetLabels(); return; }
 
@@ -119,9 +237,9 @@ public class LoanFormController {
             BigDecimal totalBD = BigDecimal.valueOf(total);
             BigDecimal cuotaBD = totalBD.divide(BigDecimal.valueOf(installments), 2, RoundingMode.HALF_UP);
 
-            lblTotalAmount.setText(String.format("$ %.2f", total));
-            lblInterestEarned.setText(String.format("$ %.2f", interestGain));
-            lblInstallmentSummary.setText(String.format("%d cuotas de $ %.2f", installments, cuotaBD.doubleValue()));
+            lblTotalAmount.setText(currencyFormatter.format(total));
+            lblInterestEarned.setText(currencyFormatter.format(interestGain));
+            lblInstallmentSummary.setText(String.format("%d cuotas de %s", installments, currencyFormatter.format(cuotaBD.doubleValue())));
         } catch (Exception e) {
             resetLabels();
         }
@@ -133,12 +251,20 @@ public class LoanFormController {
             AlertHelper.showWarning("Validación", "Falta Cliente", "Seleccione un cliente válido de la lista.");
             return;
         }
-        if (dpStartDate.getValue() == null) { // <-- Validación de fecha obligatoria
+        if (cmbAmount.getSelectionModel().getSelectedItem() == null) {
+            AlertHelper.showWarning("Validación", "Monto Inválido", "Seleccione un monto de capital autorizado de la lista.");
+            return;
+        }
+        if (dpStartDate.getValue() == null) {
             AlertHelper.showWarning("Validación", "Falta Fecha", "Seleccione la fecha de inicio del crédito.");
             return;
         }
         if (cmbFrequency.getValue() == null) {
             AlertHelper.showWarning("Validación", "Falta Frecuencia", "Seleccione una frecuencia de pago.");
+            return;
+        }
+        if (cmbInstallments.getValue() == null) {
+            AlertHelper.showWarning("Validación", "Faltan Cuotas", "Seleccione la cantidad de cuotas.");
             return;
         }
 
@@ -161,9 +287,9 @@ public class LoanFormController {
             Loan loan = new Loan();
             loan.setCustomerId(cmbCustomer.getValue().getId());
 
-            double amount = Double.parseDouble(cmbAmount.getEditor().getText().replaceAll("[^\\d.]", ""));
-            double interest = Double.parseDouble(cmbInterest.getEditor().getText().replaceAll("[^\\d.]", ""));
-            int inst = Integer.parseInt(cmbInstallments.getEditor().getText().replaceAll("[^\\d.]", ""));
+            double amount = cmbAmount.getValue();
+            double interest = cmbInterest.getValue();
+            int inst = cmbInstallments.getValue();
 
             loan.setAmount(amount);
             loan.setInterestRate(interest);
@@ -172,7 +298,6 @@ public class LoanFormController {
             String selectedFreq = cmbFrequency.getValue();
             loan.setFrequency(selectedFreq);
 
-            // ─── AQUÍ TOMAMOS LA FECHA SELECCIONADA DEL USER ───
             LocalDate fechaBase = dpStartDate.getValue();
             loan.setStartDate(fechaBase.format(formatter));
 
@@ -204,14 +329,13 @@ public class LoanFormController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            AlertHelper.showError("Error", "Datos Inválidos", "Asegúrate de rellenar los campos numéricos.");
+            AlertHelper.showError("Error", "Datos Inválidos", "Ocurrió un error al procesar el guardado.");
             return false;
         }
     }
 
     private LocalDate calculateNextDate(LocalDate cur, String freq) {
         if (freq == null) return cur.plusMonths(1);
-
         Integer daysInterval = frequencyMap.get(freq.toUpperCase());
         if (daysInterval != null) {
             return cur.plusDays(daysInterval);
@@ -220,8 +344,8 @@ public class LoanFormController {
     }
 
     private void resetLabels() {
-        lblTotalAmount.setText("$ 0.00");
-        lblInterestEarned.setText("$ 0.00");
-        lblInstallmentSummary.setText("0 cuotas de $ 0.00");
+        lblTotalAmount.setText("$ 0,00");
+        lblInterestEarned.setText("$ 0,00");
+        lblInstallmentSummary.setText("0 cuotas de $ 0,00");
     }
 }

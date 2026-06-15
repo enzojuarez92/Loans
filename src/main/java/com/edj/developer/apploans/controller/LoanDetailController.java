@@ -200,6 +200,8 @@ public class LoanDetailController {
             Scene scene = lblCustomerName.getScene();
             if (scene != null) {
                 StackPane contentArea = (StackPane) scene.lookup("#contentArea");
+
+                // 1. Limpiamos la vista actual con tu reflexión en el MainController
                 if (contentArea != null && contentArea.getParent() instanceof javafx.scene.layout.BorderPane borderPane) {
                     if (borderPane.getUserData() instanceof MainController mainController) {
                         try {
@@ -211,10 +213,39 @@ public class LoanDetailController {
                         }
                     }
                 }
+
+                // 2. Disparamos la vuelta a la pantalla de préstamos
                 var botonPrestamos = scene.lookup("#btnPrestamos");
-                if (botonPrestamos instanceof Button btn) btn.fire();
+                if (botonPrestamos instanceof Button btn) {
+                    btn.fire();
+                }
+
+                // ─── 💡 LA SOLUCIÓN DEFINITIVA CON ASINCRONÍA VISUAL ───
+                // Platform.runLater espera a que JavaFX termine de meter la nueva lista en el contentArea.
+                javafx.application.Platform.runLater(() -> {
+                    try {
+                        if (contentArea != null) {
+                            // Buscamos todos los botones dentro de la NUEVA pantalla que ya se renderizó
+                            var todosLosBotones = contentArea.lookupAll(".btn");
+                            for (javafx.scene.Node nodo : todosLosBotones) {
+                                if (nodo instanceof Button b && b.getOnAction() != null) {
+                                    // Buscamos específicamente el método handleRefresh que me mostraste en tu FXML
+                                    if (b.getOnAction().toString().contains("handleRefresh")) {
+                                        b.fire(); // ¡Gatillamos el refresco real!
+                                        System.out.println("🚀 ¡Refresco automático ejecutado con éxito!");
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("Error en el refresco asincrónico: " + ex.getMessage());
+                    }
+                });
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @FXML

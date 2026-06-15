@@ -189,12 +189,47 @@ public class MainController implements Initializable {
                 viewNode = viewCache.get(viewKey);
                 log.debug("Vista '{}' cargada desde caché", viewKey);
 
-                // Si la vista ya existía en caché y es el listado de ventas, refrescamos la grilla automáticamente
-                if (VIEW_VENTAS_LIST.equals(viewKey)) {
-                    FXMLLoader loader = new FXMLLoader(getClass().getResource(FXML_ROUTES.get(viewKey)));
-                    // Opcional: invocar un método refresh si tenés una interfaz común o referencia directa
+                // ─── 💡 LA SOLUCIÓN DEFINITIVA: REFRESCO AUTOMÁTICO EN CACHÉ ───
+                // Recuperamos el controlador real que JavaFX le pegó al nodo raíz cuando se creó
+                Object controller = viewNode.getProperties().get("fx:controller");
+
+                if (controller != null) {
+                    // Caso A: Si es el Dashboard, mandamos a recargar las consultas SQL nativas
+                    if (controller instanceof DashboardController dashboardCtrl) {
+                        // Si renombraste tus métodos a públicos los llamás directo,
+                        // o usamos este truco seguro por reflexión para ejecutar la carga en caliente:
+                        try {
+                            java.lang.reflect.Method method = dashboardCtrl.getClass().getDeclaredMethod("initialize");
+                            method.setAccessible(true);
+                            method.invoke(dashboardCtrl);
+                            log.info("🔄 DashboardController refrescado automáticamente desde el caché del menú.");
+                        } catch (Exception ex) {
+                            log.error("No se pudo refrescar el Dashboard de manera automática", ex);
+                        }
+                    }
+
+                    // Caso B: Si es la lista de préstamos (cuando volvés del detalle tras anular/finalizar)
+                    else if (viewKey.equals(VIEW_PRESTAMOS)) {
+                        try {
+                            // Buscamos tu método handleRefresh de tu controlador de listado de préstamos
+                            java.lang.reflect.Method method = controller.getClass().getMethod("handleRefresh");
+                            method.invoke(controller);
+                            log.info("🔄 LoanListController refrescado automáticamente al regresar.");
+                        } catch (NoSuchMethodException e) {
+                            // Si el método no es público o se llama distinto, probamos con initialize
+                            try {
+                                java.lang.reflect.Method initMethod = controller.getClass().getDeclaredMethod("initialize");
+                                initMethod.setAccessible(true);
+                                initMethod.invoke(controller);
+                            } catch (Exception ex) {
+                                log.error("No se pudo refrescar la lista de préstamos", ex);
+                            }
+                        }
+                    }
                 }
+
             } else {
+                // Código original: Primera carga física del FXML
                 String fxmlPath = FXML_ROUTES.get(viewKey);
                 if (fxmlPath == null) {
                     viewNode = buildPlaceholder(viewKey);
@@ -206,6 +241,14 @@ public class MainController implements Initializable {
                     } else {
                         FXMLLoader loader = new FXMLLoader(fxmlUrl);
                         viewNode = loader.load();
+
+                        // 💡 IMPORTANTE: Guardamos la referencia del controlador en las propiedades del nodo
+                        // para poder recuperarlo con seguridad cuando vuelva a usarse desde el caché
+                        Object ctrl = loader.getController();
+                        if (ctrl != null) {
+                            viewNode.getProperties().put("fx:controller", ctrl);
+                        }
+
                         log.info("Vista '{}' cargada desde FXML: {}", viewKey, fxmlPath);
                     }
                 }
@@ -214,6 +257,7 @@ public class MainController implements Initializable {
                 contentArea.getChildren().add(viewNode);
             }
 
+            // Código original: Manejo de visibilidad y animaciones
             for (Node child : contentArea.getChildren()) {
                 child.setVisible(false);
                 child.setManaged(false);
@@ -229,11 +273,9 @@ public class MainController implements Initializable {
 
             currentView = viewKey;
 
-            // Manejo dinámico del foco visual del botón lateral
             if (navBtn != null) {
                 setActiveNavButton(navBtn);
             } else if (VIEW_VENTAS_FORM.equals(viewKey)) {
-                // Si entramos al formulario de ventas sueltas, dejamos activo el botón de la sección Ventas
                 setActiveNavButton(btnVentas);
             }
 
@@ -242,7 +284,7 @@ public class MainController implements Initializable {
             AlertHelper.showError(
                     "Error de Navegación",
                     "No se pudo cargar la sección solicitada",
-                    e.getMessage()
+                    "Detalle: " + e.getMessage()
             );
         }
     }

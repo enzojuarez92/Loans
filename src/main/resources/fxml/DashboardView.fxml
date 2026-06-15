@@ -1,18 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
-
-<?import javafx.scene.chart.AreaChart?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
 <?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.NumberAxis?>
-<ScrollPane fitToWidth="true" styleClass="edge-to-edge" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.edj.developer.apploans.controller.DashboardController">
-    <VBox spacing="25" style="-fx-padding: 25;">
+<?import javafx.scene.chart.PieChart?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
 
-        <Label text="Resumen General" style="-fx-font-size: 24; -fx-font-weight: bold;"/>
+<ScrollPane fitToWidth="true" styleClass="edge-to-edge" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.edj.developer.apploans.controller.DashboardController">
+    <VBox spacing="25" style="-fx-padding: 25; -fx-background-color: #f8f9fa;">
 
         <HBox spacing="20">
             <VBox styleClass="stat-card,stat-card-primary" HBox.hgrow="ALWAYS">
@@ -33,15 +37,82 @@
             </VBox>
         </HBox>
 
-        <HBox spacing="20" VBox.vgrow="ALWAYS">
-            <VBox styleClass="card" HBox.hgrow="ALWAYS">
-                <Label text="Rendimiento Mensual" styleClass="card-title" style="-fx-padding: 15;"/>
-                <AreaChart fx:id="chartPerformance" prefHeight="300">
-                    <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
-                    <yAxis><NumberAxis side="LEFT" /></yAxis>
-                </AreaChart>
-            </VBox>
-        </HBox>
+        <GridPane hgap="20" vgap="20">
+            <columnConstraints>
+                <ColumnConstraints percentWidth="35.0" />
+                <ColumnConstraints percentWidth="37.0" />
+                <ColumnConstraints percentWidth="28.0" />
+            </columnConstraints>
+            <rowConstraints>
+                <RowConstraints vgrow="ALWAYS" />
+            </rowConstraints>
 
+            <VBox styleClass="card" spacing="15" GridPane.columnIndex="0" GridPane.rowIndex="0" style="-fx-padding: 20; -fx-background-color: white; -fx-background-radius: 8;">
+                <VBox spacing="2">
+                    <Label text="Préstamos" style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #343a40;"/>
+                    <Label text="Información General" style="-fx-font-size: 12; -fx-text-fill: #6c757d;"/>
+                </VBox>
+
+                <HBox alignment="CENTER" spacing="15" VBox.vgrow="ALWAYS">
+                    <VBox alignment="CENTER_LEFT" spacing="5">
+                        <Label fx:id="lblTotalLoans" text="0" style="-fx-font-size: 34; -fx-font-weight: 900; -fx-text-fill: #212529;"/>
+                        <Label text="Creados Totales" style="-fx-font-size: 11; -fx-text-fill: #6c757d;"/>
+                    </VBox>
+                    <StackPane prefWidth="130" prefHeight="130">
+                        <PieChart fx:id="chartStatusPie" labelsVisible="false" legendVisible="false"/>
+                        <VBox alignment="CENTER" style="-fx-background-color: white; -fx-background-radius: 100; -fx-max-width: 75; -fx-max-height: 75;"/>
+                    </StackPane>
+                </HBox>
+
+                <VBox spacing="10" style="-fx-padding: 5 0 0 0;">
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <FontIcon iconLiteral="fas-check-circle" iconSize="15" iconColor="#28a745"/>
+                        <Label text="Activos" style="-fx-font-size: 13; -fx-text-fill: #495057;" HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="lblActiveLoansCount" text="0" style="-fx-font-weight: bold;"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <FontIcon iconLiteral="fas-check-double" iconSize="15" iconColor="#007bff"/>
+                        <Label text="Completados" style="-fx-font-size: 13; -fx-text-fill: #495057;"/>
+                        <Label fx:id="lblCompletedLoansCount" text="0" style="-fx-font-weight: bold;"/>
+                    </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <FontIcon iconLiteral="fas-times-circle" iconSize="15" iconColor="#dc3545"/>
+                        <Label text="Anulados" style="-fx-font-size: 13; -fx-text-fill: #495057;"/>
+                        <Label fx:id="lblCanceledLoansCount" text="0" style="-fx-font-weight: bold;"/>
+                    </HBox>
+                </VBox>
+            </VBox>
+
+            <VBox styleClass="card" spacing="12" GridPane.columnIndex="1" GridPane.rowIndex="0" style="-fx-padding: 20; -fx-background-color: white; -fx-background-radius: 8;">
+                <HBox alignment="TOP_LEFT">
+                    <VBox spacing="4" HBox.hgrow="ALWAYS">
+                        <Label text="Total a cobrar esta semana" style="-fx-font-size: 15; -fx-font-weight: bold; -fx-text-fill: #343a40;"/>
+                        <Label fx:id="lblCuotasBadge" text="0 Cuotas" style="-fx-background-color: #e2f0fd; -fx-text-fill: #0d6efd; -fx-padding: 3 10; -fx-background-radius: 20; -fx-font-size: 11; -fx-font-weight: bold; -fx-max-width: max-content;"/>
+                    </VBox>
+                </HBox>
+                <VBox spacing="1">
+                    <Label text="Estimado Pendiente" style="-fx-font-size: 11; -fx-text-fill: #28a745; -fx-font-weight: bold;"/>
+                    <Label fx:id="lblWeeklyTotal" text="0,00" style="-fx-font-size: 26; -fx-font-weight: bold; -fx-text-fill: #212529;"/>
+                </VBox>
+                <BarChart fx:id="chartWeeklyPayments" legendVisible="false" prefHeight="150" verticalGridLinesVisible="false" horizontalGridLinesVisible="false">
+                    <xAxis><CategoryAxis side="BOTTOM" /></xAxis>
+                    <yAxis><NumberAxis side="LEFT" tickLabelsVisible="false" opacity="0"/></yAxis>
+                </BarChart>
+            </VBox>
+
+            <VBox spacing="15" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                <VBox styleClass="card" spacing="8" style="-fx-padding: 20; -fx-background-color: white; -fx-background-radius: 8;" VBox.vgrow="ALWAYS">
+                    <FontIcon iconLiteral="fas-users" iconSize="20" iconColor="#28a745"/>
+                    <Label text="Clientes del Sistema" style="-fx-font-size: 13; -fx-text-fill: #6c757d; -fx-font-weight: bold;"/>
+                    <Label fx:id="lblTotalCustomers" text="0" style="-fx-font-size: 30; -fx-font-weight: bold; -fx-text-fill: #212529;"/>
+                </VBox>
+                <VBox styleClass="card" spacing="8" style="-fx-padding: 20; -fx-background-color: white; -fx-background-radius: 8;" VBox.vgrow="ALWAYS">
+                    <FontIcon iconLiteral="fas-clock" iconSize="20" iconColor="#007bff"/>
+                    <Label text="Fecha y Hora del Servidor" style="-fx-font-size: 13; -fx-text-fill: #6c757d; -fx-font-weight: bold;"/>
+                    <Label fx:id="lblLiveDateTime" text="Cargando hora..." wrapText="true" style="-fx-font-size: 14; -fx-font-weight: bold; -fx-text-fill: #212529;"/>
+                </VBox>
+            </VBox>
+
+        </GridPane>
     </VBox>
 </ScrollPane>
