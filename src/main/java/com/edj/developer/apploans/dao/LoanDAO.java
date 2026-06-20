@@ -37,4 +37,6 @@ public interface LoanDAO {
 
     // Agregá esta firma al final de tu interfaz LoanDAO
     boolean processCascadePayment(int loanId, double totalAmount, String notes);
+    // Agregá esta firma al final de tu interfaz LoanDAO
+    boolean revertLastPayment(int receiptId, int loanId, double amount, int targetInstallmentId);
 }

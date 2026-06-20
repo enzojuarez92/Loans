@@ -19,6 +19,7 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class LoanDetailController {
 
@@ -36,6 +37,7 @@ public class LoanDetailController {
     @FXML private TableColumn<LoanReceipt, Integer> colHistId;
     @FXML private TableColumn<LoanReceipt, String> colHistDate, colHistNotes;
     @FXML private TableColumn<LoanReceipt, Double> colHistAmount;
+    @FXML private TableColumn<LoanReceipt, Void> colHistActions;
 
     private final LoanDAO loanDAO = new LoanDAOImpl();
     private Loan currentLoan;
@@ -43,7 +45,8 @@ public class LoanDetailController {
     @FXML
     public void initialize() {
         setupColumns();
-        setupHistoryColumns(); // Inicializamos la nueva tabla
+        setupHistoryColumns();
+        setupHistoryActionsColumn();
     }
 
     public void setLoanData(Loan loan) {
@@ -276,5 +279,80 @@ public class LoanDetailController {
             stage.setScene(new Scene(root));
             stage.show();
         } catch (IOException e) { e.printStackTrace(); }
+    }
+
+    // ─── 🗑️ CONFIGURACIÓN DEL BOTÓN DE ANULACIÓN DE PAGO ───
+    private void setupHistoryActionsColumn() {
+        colHistActions.setCellFactory(param -> new TableCell<>() {
+            private final Button btnDelete = new Button();
+            private final FontIcon icon = new FontIcon("fas-trash-alt");
+
+            {
+                btnDelete.setGraphic(icon);
+                // Estilo compacto, elegante y rojo sutil para el peligro
+                btnDelete.setStyle("-fx-cursor: hand; -fx-background-color: #fce8e6; -fx-text-fill: #a51d24; -fx-padding: 4 8; -fx-background-radius: 4;");
+
+                btnDelete.setOnAction(event -> {
+                    LoanReceipt receipt = getTableView().getItems().get(getIndex());
+
+                    Optional<ButtonType> result = AlertHelper.showConfirm(
+                            "Anular Recibo de Pago",
+                            "¿Estás seguro de que querés eliminar este pago?",
+                            "El monto de $ " + String.format("%,.2f", receipt.getAmount()) + " será revocado de las cuotas."
+                    );
+
+                    if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
+
+                        // Buscamos la última cuota que tiene saldo pagado para indicarle al DAO por dónde empezar a restar
+                        int targetInstallmentId = 0;
+                        if (currentLoan != null && currentLoan.getPayments() != null) {
+                            targetInstallmentId = currentLoan.getPayments().stream()
+                                    .filter(p -> "PAID".equalsIgnoreCase(p.getStatus()) || "PARTIAL".equalsIgnoreCase(p.getStatus()))
+                                    .mapToInt(LoanPayment::getId)
+                                    .max() // Agarramos el ID más alto de cuota tocada
+                                    .orElse(0);
+                        }
+
+                        // Ejecutamos tu nuevo método del DAO en inglés
+                        boolean success = loanDAO.revertLastPayment(
+                                receipt.getId(),
+                                currentLoan.getId(),
+                                receipt.getAmount(),
+                                0
+                        );
+
+                        if (success) {
+                            // Refrescamos en caliente usando tu método nativo del controlador
+                            refreshData();
+                            AlertHelper.showInfo("Pago Revertido", "Éxito", "El recibo fue eliminado y las cuotas se recalcularon correctamente.");
+                        } else {
+                            AlertHelper.showError("Error", "Error de base de datos", "No se pudo procesar la anulación del pago.");
+                        }
+                    }
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                } else {
+                    javafx.collections.ObservableList<LoanReceipt> historyList = getTableView().getItems();
+                    LoanReceipt currentReceipt = historyList.get(getIndex());
+
+                    // Como ordenás el historial por "id DESC" en la consulta SQL del DAO,
+                    // la posición 0 siempre va a ser el último pago ingresado al sistema.
+                    LoanReceipt lastReceiptMade = historyList.get(0);
+
+                    // Condición de seguridad extrema: el botón solo aparece en la última entrega realizada
+                    if (currentReceipt.getId() == lastReceiptMade.getId() && !"CANCELED".equalsIgnoreCase(currentLoan.getStatus())) {
+                        setGraphic(btnDelete);
+                    } else {
+                        setGraphic(null); // Oculto para blindar los cobros más viejos
+                    }
+                }
+            }
+        });
     }
 }

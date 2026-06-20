@@ -626,4 +626,116 @@ public class LoanDAOImpl implements LoanDAO {
             if (conn != null) { try { conn.close(); } catch (SQLException e) { e.printStackTrace(); } }
         }
     }
+
+    @Override
+    public boolean revertLastPayment(int receiptId, int loanId, double amount, int targetInstallmentId) {
+        String sqlDeleteReceipt = "DELETE FROM payment_history WHERE id = ?";
+        String sqlUpdateLoan = "UPDATE loans SET status = 'ACTIVE' WHERE id = ?";
+
+        // Traemos todas las cuotas del préstamo que tengan algún pago, ordenadas de la ÚLTIMA a la PRIMERA
+        String sqlSelectPaymentsToRevert = """
+        SELECT id, amount, paid_amount 
+        FROM loan_payments 
+        WHERE loan_id = ? AND paid_amount > 0
+        ORDER BY installment_number DESC
+    """;
+
+        String sqlUpdateInstallment = """
+        UPDATE loan_payments 
+        SET paid_amount = ?, 
+            status = ?, 
+            payment_date = CASE WHEN ? > 0 THEN payment_date ELSE NULL END 
+        WHERE id = ?
+    """;
+
+        // Clase auxiliar temporal para la reversión en memoria
+        class TempCuotaRevert {
+            int id; double amount; double paidAmount;
+            TempCuotaRevert(int id, double amount, double paidAmount) {
+                this.id = id; this.amount = amount; this.paidAmount = paidAmount;
+            }
+        }
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false); // 🔒 Transacción atómica
+
+            // 1. Borramos el recibo físico del historial
+            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteReceipt)) {
+                ps.setInt(1, receiptId);
+                ps.executeUpdate();
+            }
+
+            // 2. Cargamos las cuotas afectadas en memoria para no bloquear SQLite
+            List<TempCuotaRevert> cuotasAFijar = new ArrayList<>();
+            try (PreparedStatement psSel = conn.prepareStatement(sqlSelectPaymentsToRevert)) {
+                psSel.setInt(1, loanId);
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        cuotasAFijar.add(new TempCuotaRevert(
+                                rs.getInt("id"),
+                                rs.getDouble("amount"),
+                                rs.getDouble("paid_amount")
+                        ));
+                    }
+                }
+            }
+
+            // 3. Procesamos la CASCADA INVERSA (quitando la plata desde la última cuota tocada hacia atrás)
+            double dineroPorDevolver = amount;
+
+            try (PreparedStatement psUpPay = conn.prepareStatement(sqlUpdateInstallment)) {
+                for (TempCuotaRevert cuota : cuotasAFijar) {
+                    if (dineroPorDevolver <= 0) break;
+
+                    // Si lo que hay que devolver es mayor o igual a lo que se pagó en esta cuota
+                    if (dineroPorDevolver >= cuota.paidAmount) {
+                        dineroPorDevolver -= cuota.paidAmount;
+
+                        // La cuota vuelve a cero absoluto (PENDING)
+                        psUpPay.setDouble(1, 0.0);
+                        psUpPay.setString(2, "PENDING");
+                        psUpPay.setDouble(3, 0.0);
+                        psUpPay.setInt(4, cuota.id);
+                        psUpPay.addBatch();
+                    } else {
+                        // Si el dinero por devolver es menor, solo le restamos un cacho a esta cuota
+                        double nuevoPaidAmount = cuota.paidAmount - dineroPorDevolver;
+                        dineroPorDevolver = 0; // Satisfecho
+
+                        psUpPay.setDouble(1, nuevoPaidAmount);
+                        psUpPay.setString(2, "PARTIAL");
+                        psUpPay.setDouble(3, nuevoPaidAmount);
+                        psUpPay.setInt(4, cuota.id);
+                        psUpPay.addBatch();
+                    }
+                }
+
+                if (!cuotasAFijar.isEmpty()) {
+                    psUpPay.executeBatch();
+                }
+            }
+
+            // 4. Forzamos el estado ACTIVE en el préstamo general por si estaba en COMPLETED
+            try (PreparedStatement ps = conn.prepareStatement(sqlUpdateLoan)) {
+                ps.setInt(1, loanId);
+                ps.executeUpdate();
+            }
+
+            conn.commit(); // 🚀 Guardamos todo junto si no hubo fallos
+            log.info("🔄 Reversión en cascada completada para el préstamo ID: {}", loanId);
+            return true;
+        } catch (SQLException e) {
+            log.error("Fallo la reversión en cascada. Aplicando Rollback.", e);
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            }
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+            }
+        }
+    }
 }
