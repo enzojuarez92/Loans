@@ -6,15 +6,15 @@
 
 <VBox prefWidth="750.0" style="-fx-background-color: #eeeeee;"
       xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1"
-      fx:controller="com.edj.developer.apploans.controller.ReportController">
+      fx:controller="com.edj.developer.apploans.controller.SaleReportController">
 
     <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10; -fx-background-color: #343a40;">
-        <Button text="Imprimir" onAction="#handlePrint" styleClass="btn,btn-primary">
+        <Button text="Imprimir" onAction="#handlePrint" styleClass="btn,btn-primary" style="-fx-background-color: #0d6efd; -fx-text-fill: white;">
             <graphic>
                 <FontIcon iconLiteral="fas-print" iconColor="white"/>
             </graphic>
         </Button>
-        <Button text="Cerrar" onAction="#handleClose" styleClass="btn,btn-danger">
+        <Button text="Cerrar" onAction="#handleClose" styleClass="btn,btn-danger" style="-fx-background-color: #dc3545; -fx-text-fill: white;">
             <graphic>
                 <FontIcon iconLiteral="fas-times" iconColor="white"/>
             </graphic>
@@ -23,7 +23,7 @@
 
     <VBox fx:id="reportContainer" spacing="20" style="-fx-padding: 40; -fx-background-color: white;" VBox.vgrow="ALWAYS">
 
-        <Label text="RESUMEN DE CUENTA" style="-fx-font-size: 26; -fx-font-weight: bold; -fx-text-fill: #25467E;"/>
+        <Label text="RESUMEN DE CUENTA - VENTA" style="-fx-font-size: 26; -fx-font-weight: bold; -fx-text-fill: #25467E;"/>
 
         <HBox alignment="TOP_LEFT" spacing="10">
             <VBox spacing="6" alignment="TOP_LEFT">
@@ -31,13 +31,18 @@
                     <Label text="Cliente: " style="-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #343a40;"/>
                     <Label fx:id="lblReportCustomer" text="..." style="-fx-font-size: 16; -fx-font-weight: bold;"/>
                 </HBox>
+                <HBox spacing="4" alignment="CENTER_LEFT">
+                    <Label text="Producto: " style="-fx-text-fill: #6c757d; -fx-font-weight: bold;"/>
+                    <Label fx:id="lblReportProduct" text="..." style="-fx-text-fill: #0d6efd; -fx-font-weight: bold;"/>
+                </HBox>
                 <Label fx:id="lblReportDate" text="Fecha de emisión: ..." style="-fx-text-fill: gray;"/>
-                <Label fx:id="lblLoanId" text="Préstamo #000" style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
+                <Label fx:id="lblSaleId" text="Venta #000" style="-fx-font-weight: bold; -fx-text-fill: #495057;"/>
             </VBox>
 
             <Region HBox.hgrow="ALWAYS" />
 
             <VBox spacing="6" alignment="TOP_RIGHT" style="-fx-padding: 0 10 0 0;">
+                <Label text="INFORMACIÓN DE CONTACTO" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #6c757d; -fx-padding: 0 0 4 0;"/>
                 <HBox spacing="6" alignment="CENTER_RIGHT">
                     <FontIcon iconLiteral="fas-phone" iconSize="12" iconColor="#6c757d"/>
                     <Label fx:id="lblCustomerPhone" text="Teléfono: --" style="-fx-text-fill: #495057;"/>
@@ -55,12 +60,12 @@
 
         <Separator/>
 
-        <TableView fx:id="tableReport" prefHeight="500" style="-fx-background-color: white;">
+        <TableView fx:id="tableReport" prefHeight="450" style="-fx-background-color: white;">
             <columns>
-                <TableColumn fx:id="colNum" prefWidth="60" text="N° REC." style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colNum" prefWidth="70" text="N° REC." style="-fx-alignment: CENTER;"/>
                 <TableColumn fx:id="colDate" prefWidth="180" text="FECHA DE PAGO" style="-fx-alignment: CENTER;"/>
                 <TableColumn fx:id="colAmount" prefWidth="180" text="MONTO ENTREGADO" style="-fx-alignment: CENTER_RIGHT;"/>
-                <TableColumn fx:id="colNotes" prefWidth="250" text="DETALLE / CONCEPTO" style="-fx-alignment: CENTER;"/>
+                <TableColumn fx:id="colNotes" prefWidth="240" text="DETALLE / CONCEPTO" style="-fx-alignment: CENTER;"/>
             </columns>
             <columnResizePolicy>
                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -69,13 +74,13 @@
 
         <HBox alignment="CENTER_RIGHT" spacing="20">
             <VBox alignment="CENTER_RIGHT" spacing="5">
-                <Label text="RESUMEN FINANCIERO" style="-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #6c757d;"/>
+                <Label text="RESUMEN DE VENTA FINANCIERA" style="-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: #6c757d;"/>
                 <HBox spacing="10">
-                    <Label text="TOTAL PAGADO:"/>
+                    <Label text="TOTAL COBRADO:"/>
                     <Label fx:id="lblTotalPaid" text="0.00" style="-fx-font-weight: bold;"/>
                 </HBox>
                 <HBox spacing="10">
-                    <Label text="TOTAL PENDIENTE:" style="-fx-text-fill: #dc3545;"/>
+                    <Label text="SALDO PENDIENTE:" style="-fx-text-fill: #dc3545;"/>
                     <Label fx:id="lblReportTotalPending" text="0.00" style="-fx-font-size: 20; -fx-font-weight: bold; -fx-text-fill: #dc3545;"/>
                 </HBox>
             </VBox>

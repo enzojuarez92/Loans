@@ -3,7 +3,8 @@ package com.edj.developer.apploans.controller;
 import com.edj.developer.apploans.dao.SaleDAO;
 import com.edj.developer.apploans.dao.impl.SaleDAOImpl;
 import com.edj.developer.apploans.model.Sale;
-import com.edj.developer.apploans.model.SalePayment; // Asegurate que represente tus cuotas de productos
+import com.edj.developer.apploans.model.SalePayment;
+import com.edj.developer.apploans.model.SaleReceipt;
 import com.edj.developer.apploans.util.AlertHelper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -11,7 +12,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Modality;
@@ -26,13 +27,20 @@ import java.util.Optional;
 public class SaleDetailController {
 
     @FXML private Label lblCustomerName, lblSaleId, lblProductName, lblTotalAmount, lblPaidAmount, lblPendingAmount;
-    @FXML private Button btnCancelSale;
+    @FXML private Button btnCancelSale, btnRegisterPayment;
 
+    // Tabla 1: Plan de cuotas
     @FXML private TableView<SalePayment> tablePayments;
     @FXML private TableColumn<SalePayment, Integer> colNumber;
     @FXML private TableColumn<SalePayment, String> colDueDate, colStatus;
     @FXML private TableColumn<SalePayment, Double> colAmount, colPaidAmount, colBalance;
-    @FXML private TableColumn<SalePayment, Void> colAction;
+
+    // Tabla 2: Historial de Entregas reales
+    @FXML private TableView<SaleReceipt> tableHistory;
+    @FXML private TableColumn<SaleReceipt, Integer> colHistId;
+    @FXML private TableColumn<SaleReceipt, String> colHistDate, colHistNotes;
+    @FXML private TableColumn<SaleReceipt, Double> colHistAmount;
+    @FXML private TableColumn<SaleReceipt, Void> colHistActions;
 
     private final SaleDAO saleDAO = new SaleDAOImpl();
     private Sale currentSale;
@@ -41,6 +49,7 @@ public class SaleDetailController {
     @FXML
     public void initialize() {
         setupColumns();
+        setupHistoryColumns();
     }
 
     public void setSaleData(Sale sale) {
@@ -76,7 +85,6 @@ public class SaleDetailController {
             }
         });
 
-        // Configuración visual del Estado de la cuota en Español
         colStatus.setCellValueFactory(cell -> new javafx.beans.property.SimpleStringProperty(cell.getValue().getStatus()));
         colStatus.setCellFactory(column -> new TableCell<>() {
             @Override
@@ -89,31 +97,39 @@ public class SaleDetailController {
                         case "PAID", "PAGADA" -> { setText("PAGADA"); setTextFill(Color.web("#198754")); }
                         case "PARTIAL", "PARCIAL" -> { setText("PAGO PARCIAL"); setTextFill(Color.web("#fd7e14")); }
                         case "OVERDUE", "VENCIDA" -> { setText("VENCIDA"); setTextFill(Color.web("#b30000")); }
+                        case "CANCELED", "ANULADA" -> { setText("ANULADA"); setTextFill(Color.web("#dc3545")); }
                         default -> { setText("PENDIENTE"); setTextFill(Color.web("#0d6efd")); }
                     }
                     setStyle("-fx-font-weight: bold;");
                 }
             }
         });
-
-        setupActionColumn();
     }
 
-    private void setupActionColumn() {
-        colAction.setCellFactory(param -> new TableCell<>() {
-            private final Button btnPay = new Button();
+    private void setupHistoryColumns() {
+        colHistId.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("id"));
+        colHistDate.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("paymentDate"));
+        colHistNotes.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("notes"));
+
+        colHistAmount.setCellValueFactory(new javafx.scene.control.cell.PropertyValueFactory<>("amount"));
+        colHistAmount.setCellFactory(tc -> new TableCell<>() {
+            @Override protected void updateItem(Double v, boolean e) {
+                super.updateItem(v, e); setText(e || v == null ? null : moneyFormatter.format(v));
+            }
+        });
+
+        colHistActions.setCellFactory(param -> new TableCell<>() {
+            private final Button btnDelete = new Button();
             {
-                FontIcon icon = new FontIcon("fas-check-circle");
-                icon.setIconSize(14);
-                icon.setIconColor(Color.valueOf("#198754"));
+                FontIcon icon = new FontIcon("fas-trash-alt");
+                icon.setIconSize(13); icon.setIconColor(Color.valueOf("#dc3545"));
+                btnDelete.setGraphic(icon);
+                btnDelete.getStyleClass().addAll("btn", "btn-sm", "btn-light");
+                btnDelete.setTooltip(new Tooltip("Eliminar este cobro y devolver saldos"));
 
-                btnPay.setGraphic(icon);
-                btnPay.getStyleClass().addAll("btn", "btn-sm", "btn-light");
-                btnPay.setTooltip(new Tooltip("Procesar cobro de cuota"));
-
-                btnPay.setOnAction(event -> {
-                    SalePayment p = getTableView().getItems().get(getIndex());
-                    handlePayInstallment(p);
+                btnDelete.setOnAction(event -> {
+                    SaleReceipt receipt = getTableView().getItems().get(getIndex());
+                    handleDeleteReceipt(receipt);
                 });
             }
 
@@ -123,64 +139,138 @@ public class SaleDetailController {
                 if (empty || "CANCELED".equalsIgnoreCase(currentSale.getStatus())) {
                     setGraphic(null);
                 } else {
-                    SalePayment p = getTableView().getItems().get(getIndex());
-                    // El botón se oculta si la cuota ya está totalmente liquidada
-                    setGraphic(!"PAID".equalsIgnoreCase(p.getStatus()) ? btnPay : null);
+                    javafx.collections.ObservableList<SaleReceipt> historyList = getTableView().getItems();
+                    if (historyList != null && !historyList.isEmpty()) {
+                        SaleReceipt currentReceipt = historyList.get(getIndex());
+                        SaleReceipt lastReceiptMade = historyList.get(0);
+
+                        if (currentReceipt.getId() == lastReceiptMade.getId()) {
+                            setGraphic(btnDelete);
+                        } else {
+                            setGraphic(null);
+                        }
+                    } else {
+                        setGraphic(null);
+                    }
                 }
             }
         });
     }
 
-    private void handlePayInstallment(SalePayment payment) {
+    @FXML
+    private void handleOpenPaymentModal() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/PaymentModalView.fxml"));
             Parent root = loader.load();
 
             PaymentModalController modal = loader.getController();
-            double remainingBalance = payment.getAmount() - payment.getPaidAmount();
-            modal.setInitialData(remainingBalance);
+
+            double total = currentSale.getTotalAmount();
+            double paid = currentSale.getPayments().stream().mapToDouble(SalePayment::getPaidAmount).sum();
+            double totalPendingBalance = total - paid;
+
+            if (totalPendingBalance <= 0) {
+                AlertHelper.showInfo("Venta Saldada", "Sin saldos pendientes", "Esta operación comercial ya está totalmente liquidada.");
+                return;
+            }
+
+            modal.setInitialData(totalPendingBalance);
 
             Stage stage = new Stage();
-            stage.setTitle("Registrar Cobro de Artículo");
+            stage.setTitle("Registrar Entrega de Efectivo - Artículo");
             stage.setScene(new Scene(root));
             stage.initModality(Modality.APPLICATION_MODAL);
             stage.showAndWait();
 
             Double amountEntered = modal.getAmountResult();
-            if (amountEntered != null) {
-                double newPaidAccumulated = payment.getPaidAmount() + amountEntered;
-                String newStatus = (newPaidAccumulated >= payment.getAmount()) ? "PAID" : "PARTIAL";
-
-                // Inyección al DAO
-                boolean ok = saleDAO.updateSalePaymentStatus(payment.getId(), newStatus, newPaidAccumulated);
-                if (ok) refreshData();
+            if (amountEntered != null && amountEntered > 0) {
+                boolean ok = saleDAO.processSaleCascadePayment(currentSale.getId(), amountEntered, "Entrega de efectivo general");
+                if (ok) {
+                    refreshData();
+                    AlertHelper.showInfo("Éxito", "Cobro registrado", "La entrega se distribuyó correctamente en las cuotas del artículo.");
+                } else {
+                    AlertHelper.showError("Error", "Error operativo", "No se pudo impactar la cascada de saldos.");
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+    // 💡 NUEVO Y ASOCIADO AL CARD-HEADER
     @FXML
-    private void handleCancelSale() {
+    private void handleGenerateReport() {
+        try {
+            // 1. Cargamos el FXML correcto de reportes de venta
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/SaleReportView.fxml"));
+            Parent root = loader.load();
+
+            // 2. 💡 CORREGIDO: Usamos el controlador real asignado a esta vista
+            com.edj.developer.apploans.controller.SaleReportController controller = loader.getController();
+            controller.setData(currentSale); // Inyectamos la venta actual
+
+            // 3. Abrimos el modal
+            Stage stage = new Stage();
+            stage.setTitle("Resumen de Cuenta de Venta - " + currentSale.getCustomerName());
+            stage.initModality(Modality.APPLICATION_MODAL);
+            stage.setScene(new Scene(root));
+            stage.show();
+        } catch (Exception e) {
+            e.printStackTrace();
+            AlertHelper.showError("Error", "Error de Carga", "No se pudo abrir el resumen.");
+        }
+    }
+
+    private void handleDeleteReceipt(SaleReceipt receipt) {
         Optional<ButtonType> result = AlertHelper.showConfirm(
-                "Anular Operación Comercial",
-                "¿Está seguro de que desea eliminar la venta #" + currentSale.getId() + "?",
-                "Esta acción restaurará 1 unidad de '" + currentSale.getProductName() + "' al inventario."
+                "Anular Cobro Realizado",
+                "¿Está seguro de eliminar el recibo N° " + receipt.getId() + " por " + moneyFormatter.format(receipt.getAmount()) + "?",
+                "El sistema aplicará una reversión en cascada restando el dinero de las cuotas afectadas automáticamente."
         );
 
         if (result.isPresent() && !result.get().getButtonData().isCancelButton()) {
-            boolean ok = saleDAO.cancelSaleWithStockRestoration(currentSale.getId(), currentSale.getProductId());
+            boolean ok = saleDAO.revertLastSalePayment(receipt.getId(), currentSale.getId(), receipt.getAmount());
             if (ok) {
-                AlertHelper.showInfo("Éxito", "Operación Anulada", "La venta se canceló y el stock fue devuelto.");
+                AlertHelper.showInfo("Éxito", "Cobro eliminado", "Las cuotas volvieron a sus saldos anteriores.");
+                refreshData();
+            } else {
+                AlertHelper.showError("Error", "Fallo operacional", "No se pudo revertir el pago.");
+            }
+        }
+    }
+
+    @FXML
+    private void handleCancelSale() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Anular Operación Comercial");
+        alert.setHeaderText("¿Está seguro de que desea eliminar la venta #" + currentSale.getId() + "?");
+
+        Label lblMsg = new Label("Se cancelarán de forma definitiva todas las cuotas de la venta del producto:\n👉 '" + currentSale.getProductName() + "'");
+        lblMsg.setStyle("-fx-font-weight: bold;");
+
+        CheckBox chkRestock = new CheckBox("Reingresar 1 unidad del producto al stock actual");
+        chkRestock.setSelected(true);
+        chkRestock.setStyle("-fx-text-fill: #0d6efd; -fx-font-weight: bold; -fx-padding: 10 0 0 0;");
+
+        VBox content = new VBox(10, lblMsg, chkRestock);
+        alert.getDialogPane().setContent(content);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            boolean restoreStock = chkRestock.isSelected();
+            boolean ok = saleDAO.cancelSaleWithOption(currentSale.getId(), currentSale.getProductId(), restoreStock);
+
+            if (ok) {
+                String stockMsg = restoreStock ? "El stock fue devuelto al inventario." : "El stock NO fue modificado.";
+                AlertHelper.showInfo("Éxito", "Operación Anulada", "La venta se canceló correctamente. " + stockMsg);
                 handleBack();
             } else {
-                AlertHelper.showError("Error", "Fallo al Procesar", "No se pudo anular la venta en el sistema.");
+                AlertHelper.showError("Error", "Fallo al Procesar", "No se pudo anular la venta en la base de datos.");
             }
         }
     }
 
     private void refreshData() {
-        // Obtenemos la cabecera e historial actualizado desde la base de datos
         this.currentSale = saleDAO.findFullSaleById(currentSale.getId());
 
         if (currentSale != null) {
@@ -196,12 +286,11 @@ public class SaleDetailController {
             lblPendingAmount.setText(moneyFormatter.format(total - paid));
 
             tablePayments.setItems(FXCollections.observableArrayList(currentSale.getPayments()));
+            tableHistory.setItems(FXCollections.observableArrayList(currentSale.getReceipts()));
 
-            // SEGURIDAD: Solo se habilita el botón de anulación si no se cobró un solo centavo de ninguna cuota
-            // y además la venta no está previamente anulada.
-            boolean hasPayments = paid > 0;
             boolean isAlreadyCanceled = "CANCELED".equalsIgnoreCase(currentSale.getStatus());
-            btnCancelSale.setDisable(hasPayments || isAlreadyCanceled);
+            btnCancelSale.setDisable(isAlreadyCanceled);
+            btnRegisterPayment.setDisable((total - paid) <= 0 || isAlreadyCanceled);
         }
     }
 
@@ -216,14 +305,13 @@ public class SaleDetailController {
                         try {
                             java.lang.reflect.Field field = MainController.class.getDeclaredField("currentView");
                             field.setAccessible(true);
-                            field.set(mainController, null); // Engaña al MainController para forzar la recarga
+                            field.set(mainController, null);
                         } catch (Exception re) {
                             System.out.println("Error de reflexión: " + re.getMessage());
                         }
                     }
                 }
-                // Dispara el evento del botón de navegación de ventas para volver
-                javafx.scene.Node navBtn = scene.lookup("#btnVentas"); // Asegurá este ID en tu barra lateral
+                javafx.scene.Node navBtn = scene.lookup("#btnVentas");
                 if (navBtn instanceof Button btn) {
                     btn.fire();
                 }

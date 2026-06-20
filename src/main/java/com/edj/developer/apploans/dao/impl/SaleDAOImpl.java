@@ -4,6 +4,7 @@ import com.edj.developer.apploans.config.DatabaseConfig;
 import com.edj.developer.apploans.dao.SaleDAO;
 import com.edj.developer.apploans.model.Sale;
 import com.edj.developer.apploans.model.SalePayment;
+import com.edj.developer.apploans.model.SaleReceipt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,6 @@ public class SaleDAOImpl implements SaleDAO {
             conn = DatabaseConfig.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Validar Stock del Producto
             try (PreparedStatement psCheck = conn.prepareStatement(checkStockSql)) {
                 psCheck.setInt(1, sale.getProductId());
                 try (ResultSet rs = psCheck.executeQuery()) {
@@ -53,13 +53,11 @@ public class SaleDAOImpl implements SaleDAO {
                 }
             }
 
-            // Descontar una unidad del stock
             try (PreparedStatement psUpdate = conn.prepareStatement(updateStockSql)) {
                 psUpdate.setInt(1, sale.getProductId());
                 psUpdate.executeUpdate();
             }
 
-            // 2. Insertar Cabecera de la Venta
             int saleId = 0;
             try (PreparedStatement psSale = conn.prepareStatement(insertSaleSql, Statement.RETURN_GENERATED_KEYS)) {
                 psSale.setInt(1, sale.getCustomerId());
@@ -79,7 +77,6 @@ public class SaleDAOImpl implements SaleDAO {
 
             if (saleId == 0) throw new SQLException("Error al generar el ID de la venta.");
 
-            // 3. Generar Plan de Cuotas
             double installmentAmount = sale.getTotalAmount() / sale.getInstallments();
             LocalDate dueDate = LocalDate.parse(sale.getStartDate());
 
@@ -96,23 +93,12 @@ public class SaleDAOImpl implements SaleDAO {
             }
 
             conn.commit();
-            log.info("Venta Financiera ID {} e historial de cuotas creados con éxito.", saleId);
             return true;
-
         } catch (Exception e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                    log.warn("Rollback ejecutado en Ventas debido a: {}", e.getMessage());
-                } catch (SQLException ex) {
-                    log.error("Error crítico en Rollback", ex);
-                }
-            }
+            if (conn != null) { try { conn.rollback(); } catch (SQLException ex) { log.error("Error rollback", ex); } }
             throw new RuntimeException(e.getMessage());
         } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); } catch (SQLException e) { log.error(e.getMessage()); }
-            }
+            if (conn != null) { try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) { log.error(e.getMessage()); } }
         }
     }
 
@@ -127,7 +113,6 @@ public class SaleDAOImpl implements SaleDAO {
         WHERE 1=1
         """);
 
-        // Filtros dinámicos
         if (search != null && !search.trim().isEmpty()) {
             sql.append(" AND ((c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
         }
@@ -172,7 +157,7 @@ public class SaleDAOImpl implements SaleDAO {
                     list.add(s);
                 }
             }
-        } catch (SQLException e) { log.error("Error listando ventas filtradas", e); }
+        } catch (SQLException e) { log.error("Error listando ventas", e); }
         return list;
     }
 
@@ -214,8 +199,14 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public Sale findFullSaleById(int id) {
         Sale s = null;
+        // 💡 MODIFICADO: Agregados c.phone, c.address y c.email a la consulta SQL
         String saleSql = """
-        SELECT s.*, (c.first_name || ' ' || c.last_name) AS customer_name, p.name AS product_name 
+        SELECT s.*, 
+               (c.first_name || ' ' || c.last_name) AS customer_name, 
+               c.phone AS customer_phone, 
+               c.address AS customer_address, 
+               c.email AS customer_email, 
+               p.name AS product_name 
         FROM sales s
         JOIN customers c ON s.customer_id = c.id
         JOIN products p ON s.product_id = p.id
@@ -223,6 +214,7 @@ public class SaleDAOImpl implements SaleDAO {
         """;
 
         String paymentsSql = "SELECT * FROM sales_payments WHERE sale_id = ? ORDER BY installment_no ASC";
+        String historySql = "SELECT id, amount, payment_date, notes FROM payment_history WHERE sale_id = ? ORDER BY id DESC";
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement psSale = conn.prepareStatement(saleSql)) {
@@ -244,18 +236,21 @@ public class SaleDAOImpl implements SaleDAO {
                     s.setStartDate(rs.getString("start_date"));
                     s.setStatus(rs.getString("status"));
                     s.setCreatedAt(rs.getString("created_at"));
+
+                    // 💡 AGREGADO: Mapeo de la información de contacto hacia el objeto Sale
+                    s.setCustomerPhone(rs.getString("customer_phone"));
+                    s.setCustomerAddress(rs.getString("customer_address"));
+                    s.setCustomerEmail(rs.getString("customer_email"));
                 }
             }
 
             if (s != null) {
+                // 1. Cargar plan de cuotas
                 List<SalePayment> pList = new ArrayList<>();
                 try (PreparedStatement psPay = conn.prepareStatement(paymentsSql)) {
                     psPay.setInt(1, id);
                     try (ResultSet rsPay = psPay.executeQuery()) {
                         while (rsPay.next()) {
-                            // Mapeamos de acuerdo a las columnas de tu BD:
-                            // rsPay.getInt("installment_no") va hacia installmentNumber
-                            // rsPay.getDouble("paid_amount") ahora sí leerá la nueva columna
                             SalePayment sp = new SalePayment(
                                     rsPay.getInt("id"),
                                     rsPay.getInt("sale_id"),
@@ -270,10 +265,26 @@ public class SaleDAOImpl implements SaleDAO {
                     }
                 }
                 s.setPayments(pList);
+
+                // 2. Cargar historial usando SaleReceipt
+                List<SaleReceipt> receipts = new ArrayList<>();
+                try (PreparedStatement psHist = conn.prepareStatement(historySql)) {
+                    psHist.setInt(1, id);
+                    try (ResultSet rsH = psHist.executeQuery()) {
+                        while (rsH.next()) {
+                            SaleReceipt receipt = new SaleReceipt(
+                                    rsH.getInt("id"),
+                                    rsH.getString("payment_date"),
+                                    rsH.getDouble("amount"),
+                                    rsH.getString("notes")
+                            );
+                            receipts.add(receipt);
+                        }
+                    }
+                }
+                s.setReceipts(receipts);
             }
-        } catch (SQLException e) {
-            log.error("Error al buscar detalle completo de la venta", e);
-        }
+        } catch (SQLException e) { log.error("Error al buscar detalle de venta", e); }
         return s;
     }
 
@@ -286,53 +297,183 @@ public class SaleDAOImpl implements SaleDAO {
             ps.setDouble(2, paidAmount);
             ps.setInt(3, paymentId);
             return ps.executeUpdate() > 0;
-        } catch (SQLException e) {
-            log.error("Error al actualizar el pago de la cuota", e);
-            return false;
-        }
+        } catch (SQLException e) { log.error(e.getMessage()); return false; }
     }
 
     @Override
-    public boolean cancelSaleWithStockRestoration(int saleId, int productId) {
-        String updateSale = "UPDATE sales SET status = 'CANCELED' WHERE id = ?";
-        String updatePayments = "UPDATE sales_payments SET status = 'ANULADA' WHERE sale_id = ?";
-        String restoreStock = "UPDATE products SET stock = stock + 1 WHERE id = ?";
+    public boolean processSaleCascadePayment(int saleId, double totalAmount, String notes) {
+        String sqlInsertHistory = "INSERT INTO payment_history (sale_id, amount, payment_date, notes) VALUES (?, ?, datetime('now', 'localtime'), ?)";
+        String sqlSelectPayments = "SELECT id, amount, paid_amount FROM sales_payments WHERE sale_id = ? AND status != 'PAID' ORDER BY installment_no ASC";
+        String sqlUpdatePayment = "UPDATE sales_payments SET paid_amount = ?, status = ?, paid_at = datetime('now', 'localtime') WHERE id = ?";
+        String sqlCountPending = "SELECT COUNT(*) FROM sales_payments WHERE sale_id = ? AND status != 'PAID'";
+        String sqlUpdateSaleStatus = "UPDATE sales SET status = 'COMPLETED' WHERE id = ?";
+
+        class TempCuotaSale {
+            int id; double amount; double paidAmount;
+            TempCuotaSale(int id, double amount, double paidAmount) { this.id = id; this.amount = amount; this.paidAmount = paidAmount; }
+        }
 
         Connection conn = null;
         try {
             conn = DatabaseConfig.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. Cancelar Cabecera de la Venta
-            try (PreparedStatement ps1 = conn.prepareStatement(updateSale)) {
-                ps1.setInt(1, saleId);
-                ps1.executeUpdate();
+            try (PreparedStatement ps = conn.prepareStatement(sqlInsertHistory)) {
+                ps.setInt(1, saleId);
+                ps.setDouble(2, totalAmount);
+                ps.setString(3, (notes == null || notes.trim().isEmpty()) ? "Entrega de cuota comercial" : notes.trim());
+                ps.executeUpdate();
             }
 
-            // 2. Anular todas sus Cuotas
-            try (PreparedStatement ps2 = conn.prepareStatement(updatePayments)) {
-                ps2.setInt(1, saleId);
-                ps2.executeUpdate();
+            List<TempCuotaSale> list = new ArrayList<>();
+            try (PreparedStatement psSel = conn.prepareStatement(sqlSelectPayments)) {
+                psSel.setInt(1, saleId);
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(new TempCuotaSale(rs.getInt("id"), rs.getDouble("amount"), rs.getDouble("paid_amount")));
+                    }
+                }
             }
 
-            // 3. Devolver +1 al Stock del Producto
-            try (PreparedStatement ps3 = conn.prepareStatement(restoreStock)) {
-                ps3.setInt(1, productId);
-                ps3.executeUpdate();
+            double remaining = totalAmount;
+            try (PreparedStatement psUp = conn.prepareStatement(sqlUpdatePayment)) {
+                for (TempCuotaSale c : list) {
+                    if (remaining <= 0) break;
+                    double debt = c.amount - c.paidAmount;
+                    if (remaining >= debt) {
+                        remaining -= debt;
+                        psUp.setDouble(1, c.amount);
+                        psUp.setString(2, "PAID");
+                        psUp.setInt(3, c.id);
+                    } else {
+                        psUp.setDouble(1, c.paidAmount + remaining);
+                        psUp.setString(2, "PARTIAL");
+                        psUp.setInt(3, c.id);
+                        remaining = 0;
+                    }
+                    psUp.addBatch();
+                }
+                if (!list.isEmpty()) psUp.executeBatch();
+            }
+
+            int pending = 0;
+            try (PreparedStatement psCount = conn.prepareStatement(sqlCountPending)) {
+                psCount.setInt(1, saleId);
+                try (ResultSet rs = psCount.executeQuery()) { if (rs.next()) pending = rs.getInt(1); }
+            }
+            if (pending == 0) {
+                try (PreparedStatement psUpSale = conn.prepareStatement(sqlUpdateSaleStatus)) {
+                    psUpSale.setInt(1, saleId); psUpSale.executeUpdate();
+                }
+            }
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            return false;
+        } finally {
+            if (conn != null) try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+        }
+    }
+
+    @Override
+    public boolean revertLastSalePayment(int receiptId, int saleId, double amount) {
+        String sqlDeleteReceipt = "DELETE FROM payment_history WHERE id = ?";
+        String sqlUpdateSale = "UPDATE sales SET status = 'ACTIVE' WHERE id = ?";
+        String sqlSelectPaymentsToRevert = "SELECT id, amount, paid_amount FROM sales_payments WHERE sale_id = ? AND paid_amount > 0 ORDER BY installment_no DESC";
+        String sqlUpdatePayment = "UPDATE sales_payments SET paid_amount = ?, status = ?, paid_at = CASE WHEN ? > 0 THEN paid_at ELSE NULL END WHERE id = ?";
+
+        class TempCuotaSaleRevert {
+            int id; double amount; double paidAmount;
+            TempCuotaSaleRevert(int id, double amount, double paidAmount) { this.id = id; this.amount = amount; this.paidAmount = paidAmount; }
+        }
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlDeleteReceipt)) {
+                ps.setInt(1, receiptId); ps.executeUpdate();
+            }
+
+            List<TempCuotaSaleRevert> list = new ArrayList<>();
+            try (PreparedStatement psSel = conn.prepareStatement(sqlSelectPaymentsToRevert)) {
+                psSel.setInt(1, saleId);
+                try (ResultSet rs = psSel.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(new TempCuotaSaleRevert(rs.getInt("id"), rs.getDouble("amount"), rs.getDouble("paid_amount")));
+                    }
+                }
+            }
+
+            double revertAmount = amount;
+            try (PreparedStatement psUp = conn.prepareStatement(sqlUpdatePayment)) {
+                for (TempCuotaSaleRevert c : list) {
+                    if (revertAmount <= 0) break;
+                    if (revertAmount >= c.paidAmount) {
+                        revertAmount -= c.paidAmount;
+                        psUp.setDouble(1, 0.0);
+                        psUp.setString(2, "PENDING");
+                        psUp.setDouble(3, 0.0);
+                    } else {
+                        double newPaid = c.paidAmount - revertAmount;
+                        revertAmount = 0;
+                        psUp.setDouble(1, newPaid);
+                        psUp.setString(2, "PARTIAL");
+                        psUp.setDouble(3, newPaid);
+                    }
+                    psUp.setInt(4, c.id);
+                    psUp.addBatch();
+                }
+                if (!list.isEmpty()) psUp.executeBatch();
+            }
+
+            try (PreparedStatement ps = conn.prepareStatement(sqlUpdateSale)) {
+                ps.setInt(1, saleId); ps.executeUpdate();
             }
 
             conn.commit();
             return true;
         } catch (SQLException e) {
-            if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) { log.error("Error en rollback", ex); }
-            }
-            log.error("Error al anular la venta comercial", e);
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
             return false;
         } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); } catch (SQLException e) { log.error(e.getMessage()); }
+            if (conn != null) try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
+        }
+    }
+
+    @Override
+    public boolean cancelSaleWithOption(int saleId, int productId, boolean restoreStock) {
+        String updateSale = "UPDATE sales SET status = 'CANCELED' WHERE id = ?";
+        String updatePayments = "UPDATE sales_payments SET status = 'CANCELED' WHERE sale_id = ?";
+        String restoreStockSql = "UPDATE products SET stock = stock + 1 WHERE id = ?";
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement ps1 = conn.prepareStatement(updateSale)) {
+                ps1.setInt(1, saleId); ps1.executeUpdate();
             }
+            try (PreparedStatement ps2 = conn.prepareStatement(updatePayments)) {
+                ps2.setInt(1, saleId); ps2.executeUpdate();
+            }
+
+            if (restoreStock) {
+                try (PreparedStatement ps3 = conn.prepareStatement(restoreStockSql)) {
+                    ps3.setInt(1, productId); ps3.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) try { conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            return false;
+        } finally {
+            if (conn != null) try { conn.close(); } catch (SQLException e) { e.printStackTrace(); }
         }
     }
 }

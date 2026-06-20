@@ -1,5 +1,8 @@
 package com.edj.developer.apploans.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Sale {
     private int id;
     private int customerId;
@@ -15,19 +18,35 @@ public class Sale {
     private String status;
     private String createdAt;
 
+    // 💡 AGREGADOS: Campos de contacto del cliente para que los consuma el reporte
+    private String customerPhone;
+    private String customerAddress;
+    private String customerEmail;
+
+    private List<SalePayment> payments = new ArrayList<>();
+    // 💡 CORREGIDO: Ahora usa tu nueva clase SaleReceipt en lugar de LoanReceipt
+    private List<SaleReceipt> receipts = new ArrayList<>();
+
     public Sale() {}
 
-    private java.util.List<SalePayment> payments = new java.util.ArrayList<>();
+    // --- GETTERS Y SETTERS DE LAS LISTAS ---
+    public List<SalePayment> getPayments() { return payments; }
+    public void setPayments(List<SalePayment> payments) { this.payments = payments; }
 
-    public java.util.List<SalePayment> getPayments() {
-        return payments;
-    }
+    public List<SaleReceipt> getReceipts() { return receipts; }
+    public void setReceipts(List<SaleReceipt> receipts) { this.receipts = receipts; }
 
-    public void setPayments(java.util.List<SalePayment> payments) {
-        this.payments = payments;
-    }
+    // --- GETTERS Y SETTERS DE DATOS DE CONTACTO ---
+    public String getCustomerPhone() { return customerPhone; }
+    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
 
-    // Getters y Setters
+    public String getCustomerAddress() { return customerAddress; }
+    public void setCustomerAddress(String customerAddress) { this.customerAddress = customerAddress; }
+
+    public String getCustomerEmail() { return customerEmail; }
+    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
+
+    // --- GETTERS Y SETTERS TRADICIONALES ---
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 

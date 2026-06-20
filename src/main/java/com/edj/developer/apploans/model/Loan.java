@@ -7,6 +7,9 @@ public class Loan {
     private int id;
     private int customerId;
     private String customerName; // Para mostrar en tablas
+    private String customerPhone;
+    private String customerAddress;
+    private String customerEmail;
     private double amount;
     private double interestRate;
     private double totalAmount;
@@ -43,6 +46,16 @@ public class Loan {
     public void setCustomerName(String customerName) {
         this.customerName = customerName;
     }
+
+    public String getCustomerPhone() { return customerPhone; }
+    public void setCustomerPhone(String customerPhone) { this.customerPhone = customerPhone; }
+
+    public String getCustomerAddress() { return customerAddress; }
+    public void setCustomerAddress(String customerAddress) { this.customerAddress = customerAddress; }
+
+    public String getCustomerEmail() { return customerEmail; }
+    public void setCustomerEmail(String customerEmail) { this.customerEmail = customerEmail; }
+
 
     public double getAmount() {
         return amount;

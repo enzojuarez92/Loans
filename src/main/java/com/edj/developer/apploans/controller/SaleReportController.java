@@ -1,7 +1,7 @@
 package com.edj.developer.apploans.controller;
 
-import com.edj.developer.apploans.model.Loan;
-import com.edj.developer.apploans.model.LoanReceipt;
+import com.edj.developer.apploans.model.Sale; // Asegúrate de apuntar a tu modelo real de Venta
+import com.edj.developer.apploans.model.SaleReceipt; // La clase que represente el historial de pagos de la venta
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.print.PrinterJob;
@@ -14,48 +14,48 @@ import javafx.stage.Stage;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-public class ReportController {
+public class SaleReportController {
     @FXML private VBox reportContainer;
-    @FXML private Label lblReportCustomer, lblReportDate, lblLoanId, lblTotalPaid, lblReportTotalPending;
+    @FXML private Label lblReportCustomer, lblReportProduct, lblReportDate, lblSaleId, lblTotalPaid, lblReportTotalPending;
 
-    // Nuevas etiquetas de contacto añadidas al FXML
+    // Etiquetas de contacto del cliente vinculadas a la venta
     @FXML private Label lblCustomerPhone, lblCustomerAddress, lblCustomerEmail;
 
-    @FXML private TableView<LoanReceipt> tableReport;
-    @FXML private TableColumn<LoanReceipt, Integer> colNum;
-    @FXML private TableColumn<LoanReceipt, String> colDate;
-    @FXML private TableColumn<LoanReceipt, Double> colAmount;
-    @FXML private TableColumn<LoanReceipt, String> colNotes;
+    @FXML private TableView<SaleReceipt> tableReport;
+    @FXML private TableColumn<SaleReceipt, Integer> colNum;
+    @FXML private TableColumn<SaleReceipt, String> colDate;
+    @FXML private TableColumn<SaleReceipt, Double> colAmount;
+    @FXML private TableColumn<SaleReceipt, String> colNotes;
 
-    public void setData(Loan loan) {
-        if (loan == null) return;
+    public void setData(Sale sale) {
+        if (sale == null) return;
 
-        // 1. Cabecera Principal
-        lblReportCustomer.setText(loan.getCustomerName());
-        lblLoanId.setText("Préstamo #" + loan.getId());
+        // 1. Cabecera Principal y Detalles de Venta
+        lblReportCustomer.setText(sale.getCustomerName());
+        lblReportProduct.setText(sale.getProductName()); // Muestra el producto de la venta financiera
+        lblSaleId.setText("Venta #" + sale.getId());
         lblReportDate.setText("Fecha de emisión: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
 
         // 2. Carga de Información de Contacto del Cliente
-        // Modificá estos métodos si tus datos cuelgan de loan.getCustomer().getPhone(), etc.
-        String phone = loan.getCustomerPhone();
-        String address = loan.getCustomerAddress();
-        String email = loan.getCustomerEmail();
+        String phone = sale.getCustomerPhone();
+        String address = sale.getCustomerAddress();
+        String email = sale.getCustomerEmail();
 
         lblCustomerPhone.setText((phone == null || phone.trim().isEmpty()) ? "Teléfono: --" : "Teléfono: " + phone);
         lblCustomerAddress.setText((address == null || address.trim().isEmpty()) ? "Dirección: --" : "Dirección: " + address);
         lblCustomerEmail.setText((email == null || email.trim().isEmpty()) ? "Email: --" : "Email: " + email);
 
-        // 3. Configurar Columnas para el Historial de Entregas
+        // 3. Configurar Columnas (Aplicando la limpieza de hora que querías)
         colNum.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(cd.getValue().getId()).asObject());
         colDate.setCellValueFactory(cd -> {
-            String fullDate = cd.getValue().getPaymentDate();
+            String fullDate = cd.getValue().getPaymentDate(); // O getCreatedAt(), según mapees tu historial
             String dateOnly = (fullDate != null && fullDate.contains(" ")) ? fullDate.split(" ")[0] : fullDate;
             return new javafx.beans.property.SimpleStringProperty(dateOnly);
         });
         colAmount.setCellValueFactory(cd -> new javafx.beans.property.SimpleDoubleProperty(cd.getValue().getAmount()).asObject());
         colNotes.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(cd.getValue().getNotes()));
 
-        // Formateo estético para los montos monetarios en la tabla
+        // Formateo estético para los montos monetarios en la tabla de cobros
         colAmount.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -64,15 +64,16 @@ public class ReportController {
             }
         });
 
-        // 4. Cargar Datos usando la lista de recibos
-        if (loan.getReceipts() != null) {
-            tableReport.setItems(FXCollections.observableArrayList(loan.getReceipts()));
+        // 4. Cargar Historial de Pagos Recibidos de la Venta
+        if (sale.getReceipts() != null) {
+            tableReport.setItems(FXCollections.observableArrayList(sale.getReceipts()));
         }
 
-        // 5. Totales Financieros
-        double totalPrestamo = loan.getTotalAmount();
-        double paid = loan.getReceipts().stream().mapToDouble(LoanReceipt::getAmount).sum();
-        double pending = totalPrestamo - paid;
+        // 5. Totales Financieros de la Venta
+        double paid = sale.getReceipts() != null
+                ? sale.getReceipts().stream().mapToDouble(SaleReceipt::getAmount).sum()
+                : 0.0;
+        double pending = sale.getTotalAmount() - paid; // Total de la venta financiera menos lo entregado
 
         lblTotalPaid.setText(String.format("$ %,.2f", paid));
         lblReportTotalPending.setText(String.format("$ %,.2f", pending));
@@ -89,6 +90,7 @@ public class ReportController {
         if (job.showPrintDialog(reportContainer.getScene().getWindow())) {
             javafx.print.Printer printer = job.getPrinter();
 
+            // Configuración idéntica de página A4 con márgenes finos
             javafx.print.PageLayout pageLayout = printer.createPageLayout(
                     javafx.print.Paper.A4,
                     javafx.print.PageOrientation.PORTRAIT,
@@ -100,6 +102,7 @@ public class ReportController {
             double printableWidth = pageLayout.getPrintableWidth();
             double reportWidth = reportContainer.getBoundsInLocal().getWidth();
 
+            // Ajuste y escalado dinámico en caso de desborde horizontal
             double scale = 1.0;
             if (reportWidth > printableWidth) {
                 scale = printableWidth / reportWidth;

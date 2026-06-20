@@ -251,15 +251,16 @@ public class LoanDAOImpl implements LoanDAO {
 
     @Override
     public Loan findFullLoanById(int loanId) {
-        String sqlLoan = "SELECT l.*, c.first_name, c.last_name FROM loans l INNER JOIN customers c ON l.customer_id = c.id WHERE l.id = ?";
+        // 💡 MODIFICADO: Agregamos c.phone, c.address, c.email a la consulta
+        String sqlLoan = "SELECT l.*, c.first_name, c.last_name, c.phone, c.address, c.email " +
+                "FROM loans l INNER JOIN customers c ON l.customer_id = c.id WHERE l.id = ?";
         String sqlPayments = "SELECT * FROM loan_payments WHERE loan_id = ? ORDER BY installment_number ASC";
-        // 💡 NUEVA CONSULTA: Traemos el historial de entregas de este préstamo
         String sqlHistory = "SELECT id, amount, payment_date, notes FROM payment_history WHERE loan_id = ? ORDER BY id DESC";
 
         Loan loan = null;
 
         try (Connection conn = DatabaseConfig.getConnection()) {
-            // 1. Mapeamos los datos generales del Préstamo
+            // 1. Mapeamos los datos generales del Préstamo e Información del Cliente
             try (PreparedStatement pstmt = conn.prepareStatement(sqlLoan)) {
                 pstmt.setInt(1, loanId);
                 try (ResultSet rs = pstmt.executeQuery()) {
@@ -274,6 +275,11 @@ public class LoanDAOImpl implements LoanDAO {
                         loan.setStartDate(rs.getString("start_date"));
                         loan.setStatus(rs.getString("status"));
                         loan.setCustomerName(rs.getString("first_name") + " " + rs.getString("last_name"));
+
+                        // 🚀 NUEVO: Seteamos los campos de contacto que agregaste al modelo Loan
+                        loan.setCustomerPhone(rs.getString("phone"));
+                        loan.setCustomerAddress(rs.getString("address"));
+                        loan.setCustomerEmail(rs.getString("email"));
                     }
                 }
             }
@@ -301,7 +307,7 @@ public class LoanDAOImpl implements LoanDAO {
                     }
                 }
 
-                // 3. 💡 MAPEAMOS LAS ENTREGAS REALES (HISTORIAL)
+                // 3. MAPEAMOS LAS ENTREGAS REALES (HISTORIAL)
                 List<LoanReceipt> receipts = new ArrayList<>();
                 try (PreparedStatement pstmt = conn.prepareStatement(sqlHistory)) {
                     pstmt.setInt(1, loanId);
@@ -315,7 +321,7 @@ public class LoanDAOImpl implements LoanDAO {
                             );
                             receipts.add(receipt);
                         }
-                        loan.setReceipts(receipts); // Se lo inyectamos al préstamo fresco
+                        loan.setReceipts(receipts);
                     }
                 }
             }
