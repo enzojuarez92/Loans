@@ -31,7 +31,6 @@ public class ReportDAOImpl implements ReportDAO {
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
                 list.add(new DailyReportItem(
                         rs.getInt("loan_id"),
@@ -41,16 +40,13 @@ public class ReportDAOImpl implements ReportDAO {
                         rs.getString("due_date")
                 ));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 
     @Override
     public List<GeneralReportItem> getActiveLoansInstallments() {
         List<GeneralReportItem> list = new ArrayList<>();
-        // Buscamos la cuota pendiente más próxima de cada crédito activo
         String sql = """
             SELECT (c.first_name || ' ' || c.last_name) AS customer, l.id AS loan_id, lp.amount
             FROM loans l
@@ -65,7 +61,6 @@ public class ReportDAOImpl implements ReportDAO {
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
-
             while (rs.next()) {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
@@ -73,9 +68,67 @@ public class ReportDAOImpl implements ReportDAO {
                         rs.getDouble("amount")
                 ));
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    // 💡 AGREGADO: Vencimientos de Cuotas de Ventas del Día de Hoy
+    @Override
+    public List<DailyReportItem> getDailyDueSalesInstallments() {
+        List<DailyReportItem> list = new ArrayList<>();
+        String sql = """
+            SELECT sp.sale_id, (c.first_name || ' ' || c.last_name) AS customer, 
+                   sp.installment_no AS installment_number, sp.amount, sp.due_date
+            FROM sales_payments sp
+            JOIN sales s ON sp.sale_id = s.id
+            JOIN customers c ON s.customer_id = c.id
+            WHERE date(sp.due_date) = date('now', 'localtime')
+              AND sp.status != 'PAID'
+            ORDER BY customer ASC
+            """;
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new DailyReportItem(
+                        rs.getInt("sale_id"), // Mapea al id de la venta comercial
+                        rs.getString("customer"),
+                        rs.getInt("installment_number"),
+                        rs.getDouble("amount"),
+                        rs.getString("due_date")
+                ));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return list;
+    }
+
+    // 💡 AGREGADO: Planilla General de Ventas Activas (Cuota Pendiente Próxima)
+    @Override
+    public List<GeneralReportItem> getActiveSalesInstallments() {
+        List<GeneralReportItem> list = new ArrayList<>();
+        String sql = """
+            SELECT (c.first_name || ' ' || c.last_name) AS customer, s.id AS sale_id, sp.amount
+            FROM sales s
+            JOIN customers c ON s.customer_id = c.id
+            JOIN sales_payments sp ON sp.sale_id = s.id
+            WHERE s.status = 'ACTIVE'
+              AND sp.status != 'PAID'
+            GROUP BY s.id
+            ORDER BY customer ASC
+            """;
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new GeneralReportItem(
+                        rs.getString("customer"),
+                        rs.getInt("sale_id"), // ID de la venta comercial
+                        rs.getDouble("amount")
+                ));
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
         return list;
     }
 }

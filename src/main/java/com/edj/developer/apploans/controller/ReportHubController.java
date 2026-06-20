@@ -19,18 +19,33 @@ public class ReportHubController {
 
     private final ReportDAO reportDAO = new ReportDAOImpl();
 
+    // ================= MÉTODOS DE PRÉSTAMOS =================
     @FXML
     private void generateDailyReport() {
         List<DailyReportItem> data = reportDAO.getDailyDueInstallments();
-        openPrintModal("Reporte Diario (Vencimientos de Hoy)", buildDailyGrid(data));
+        openPrintModal("Reporte Diario (Vencimientos de Hoy)", buildDailyGrid(data, "PRÉST."));
     }
 
     @FXML
     private void generateGeneralReport() {
         List<GeneralReportItem> data = reportDAO.getActiveLoansInstallments();
-        openPrintModal("Planilla General de Cobranza", buildGeneralGrid(data));
+        openPrintModal("Planilla General de Cobranza", buildGeneralGrid(data, "PRÉST."));
     }
 
+    // ================= MÉTODOS DE VENTAS =================
+    @FXML
+    private void generateSaleDailyReport() {
+        List<DailyReportItem> data = reportDAO.getDailyDueSalesInstallments();
+        openPrintModal("Reporte Diario Ventas (Vencimientos de Hoy)", buildDailyGrid(data, "VENTA"));
+    }
+
+    @FXML
+    private void generateSaleGeneralReport() {
+        List<GeneralReportItem> data = reportDAO.getActiveSalesInstallments();
+        openPrintModal("Planilla General de Cobranza - Ventas", buildGeneralGrid(data, "VENTA"));
+    }
+
+    // ================= MODAL DE IMPRESIÓN =================
     private void openPrintModal(String title, GridPane reportContent) {
         Stage modalStage = new Stage();
         modalStage.initModality(Modality.APPLICATION_MODAL);
@@ -47,9 +62,8 @@ public class ReportHubController {
         modalStage.showAndWait();
     }
 
-    // ── Grid Diario con Renderizado de Datos Corregido ──
-    // ── GRID DIARIO (Vencimientos de Hoy) ──
-    private GridPane buildDailyGrid(List<DailyReportItem> data) {
+    // ── GRID DIARIO REUTILIZABLE ──
+    private GridPane buildDailyGrid(List<DailyReportItem> data, String codeType) {
         GridPane grid = new GridPane();
         grid.setHgap(15);
         grid.setVgap(0);
@@ -57,8 +71,8 @@ public class ReportHubController {
 
         int itemsPerColumn = (int) Math.ceil((double) data.size() / 2);
 
-        grid.add(createCustomTableHeader(), 0, 0);
-        grid.add(createCustomTableHeader(), 1, 0);
+        grid.add(createCustomTableHeader(codeType), 0, 0);
+        grid.add(createCustomTableHeader(codeType), 1, 0);
 
         if (data.isEmpty()) {
             grid.add(createEmptyRowNotice(), 0, 1);
@@ -74,28 +88,24 @@ public class ReportHubController {
             row.setPrefHeight(28);
             row.setMinHeight(28);
 
-            // 1° Columna: N° Préstamo (En el reporte diario, si no tenés el ID directo en el objeto, podés usar su ID o dejar una referencia corta)
             Label lblPrestamo = new Label("#" + item.getLoanId());
             lblPrestamo.setMinWidth(45);
             lblPrestamo.setPrefWidth(45);
             lblPrestamo.setAlignment(Pos.CENTER);
             lblPrestamo.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0;");
 
-            // 2° Columna: CLIENTE
             Label lblClient = new Label(" " + item.getCustomerName());
             lblClient.setMinWidth(155);
             lblClient.setPrefWidth(155);
             lblClient.setAlignment(Pos.CENTER_LEFT);
             lblClient.setStyle("-fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0;");
 
-            // 3° Columna: MONTO DE LA CUOTA
             Label lblMontoCta = new Label(String.format("$ %,.2f ", item.getAmount()));
             lblMontoCta.setMinWidth(80);
             lblMontoCta.setPrefWidth(80);
             lblMontoCta.setAlignment(Pos.CENTER_RIGHT);
             lblMontoCta.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0; -fx-padding: 0 3 0 0;");
 
-            // 4° Columna: ESPACIO BLANCO AMPLIO PARA ESCRIBIR EL COBRO
             Label lblCobroVacio = new Label(" $                 ");
             lblCobroVacio.setMinWidth(90);
             lblCobroVacio.setPrefWidth(90);
@@ -112,8 +122,8 @@ public class ReportHubController {
         return grid;
     }
 
-    // ── GRID GENERAL (Planilla de Cobranza Activa) ──
-    private GridPane buildGeneralGrid(List<GeneralReportItem> data) {
+    // ── GRID GENERAL REUTILIZABLE ──
+    private GridPane buildGeneralGrid(List<GeneralReportItem> data, String codeType) {
         GridPane grid = new GridPane();
         grid.setHgap(15);
         grid.setVgap(0);
@@ -121,8 +131,8 @@ public class ReportHubController {
 
         int itemsPerColumn = (int) Math.ceil((double) data.size() / 2);
 
-        grid.add(createCustomTableHeader(), 0, 0);
-        grid.add(createCustomTableHeader(), 1, 0);
+        grid.add(createCustomTableHeader(codeType), 0, 0);
+        grid.add(createCustomTableHeader(codeType), 1, 0);
 
         if (data.isEmpty()) {
             grid.add(createEmptyRowNotice(), 0, 1);
@@ -138,28 +148,24 @@ public class ReportHubController {
             row.setPrefHeight(28);
             row.setMinHeight(28);
 
-            // 1° Columna: N° Préstamo directo sacado de la base
             Label lblPrestamo = new Label("#" + item.getLoanId());
             lblPrestamo.setMinWidth(45);
             lblPrestamo.setPrefWidth(45);
             lblPrestamo.setAlignment(Pos.CENTER);
             lblPrestamo.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0;");
 
-            // 2° Columna: CLIENTE (Limpio, ya no necesita el #ID acá adentro)
             Label lblClient = new Label(" " + item.getCustomerName());
             lblClient.setMinWidth(155);
             lblClient.setPrefWidth(155);
             lblClient.setAlignment(Pos.CENTER_LEFT);
             lblClient.setStyle("-fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0;");
 
-            // 3° Columna: MONTO DE LA CUOTA
             Label lblMontoCta = new Label(String.format("$ %,.2f ", item.getInstallmentAmount()));
             lblMontoCta.setMinWidth(80);
             lblMontoCta.setPrefWidth(80);
             lblMontoCta.setAlignment(Pos.CENTER_RIGHT);
             lblMontoCta.setStyle("-fx-font-weight: bold; -fx-font-size: 11px; -fx-text-fill: #212529; -fx-border-color: #000000; -fx-border-width: 0 1 0 0; -fx-padding: 0 3 0 0;");
 
-            // 4° Columna: ESPACIO BLANCO AMPLIO PARA RECAUDACIÓN
             Label lblCobroVacio = new Label(" $                ");
             lblCobroVacio.setMinWidth(90);
             lblCobroVacio.setPrefWidth(90);
@@ -176,18 +182,18 @@ public class ReportHubController {
         return grid;
     }
 
-    // ── NUEVO HEADER DISEÑADO A MEDIDA (Suma un total exacto de 370px de ancho por columna) ──
-    private HBox createCustomTableHeader() {
+    // ── HEADER DISEÑADO DINÁMICO (Cambia PRÉST. por VENTA según la sección del botón) ──
+    private HBox createCustomTableHeader(String codeType) {
         HBox header = new HBox(0);
         header.setStyle("-fx-background-color: #007f5f; -fx-border-color: #000000; -fx-border-width: 1;");
         header.setPrefHeight(25);
         header.setMinHeight(25);
         header.setAlignment(Pos.CENTER_LEFT);
 
-        Label hPrestamo = new Label("PRÉST.");
+        Label hPrestamo = new Label(codeType);
         hPrestamo.setMinWidth(45);
         hPrestamo.setAlignment(Pos.CENTER);
-        hPrestamo.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 10px; -fx-border-color: #ffffff; -fx-border-width: 0 1 0 0;");
+        hPrestamo.setStyle("-fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 9px; -fx-border-color: #ffffff; -fx-border-width: 0 1 0 0;");
 
         Label hCliente = new Label(" CLIENTE");
         hCliente.setMinWidth(155);

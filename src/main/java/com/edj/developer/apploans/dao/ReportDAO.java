@@ -7,4 +7,7 @@ import java.util.List;
 public interface ReportDAO {
     List<DailyReportItem> getDailyDueInstallments();
     List<GeneralReportItem> getActiveLoansInstallments();
+
+    List<DailyReportItem> getDailyDueSalesInstallments();
+    List<GeneralReportItem> getActiveSalesInstallments();
 }

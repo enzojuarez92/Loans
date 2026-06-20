@@ -20,30 +20,62 @@
         </VBox>
     </HBox>
 
-    <VBox VBox.vgrow="ALWAYS" styleClass="card" spacing="20" style="-fx-padding: 30;">
-        <Label text="Seleccione el reporte que desea generar para impresión en A4"
-               style="-fx-font-size: 14px; -fx-text-fill: #495057; -fx-font-weight: bold;"/>
+    <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS" style="-fx-background-color: transparent; -fx-background-insets: 0; -fx-padding: 0;">
+        <VBox styleClass="card" spacing="25" style="-fx-padding: 30;">
+            <Label text="Seleccione el reporte que desea generar para impresión en A4"
+                   style="-fx-font-size: 15px; -fx-text-fill: #495057; -fx-font-weight: bold;"/>
 
-        <HBox spacing="20">
-            <VBox styleClass="stat-card, stat-card-primary" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateDailyReport">
-                <HBox alignment="CENTER_LEFT" spacing="14">
-                    <FontIcon iconLiteral="fas-calendar-day" iconSize="28" styleClass="stat-icon-primary"/>
-                    <VBox spacing="4">
-                        <Label text="REPORTE DIARIO" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d6efd;"/>
-                        <Label text="Cuotas con vencimiento el día de hoy." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+            <VBox spacing="10">
+                <Label text="CARTERA DE PRÉSTAMOS" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #6c757d; -fx-letter-spacing: 1px;"/>
+                <HBox spacing="20">
+                    <VBox styleClass="stat-card, stat-card-primary" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateDailyReport">
+                        <HBox alignment="CENTER_LEFT" spacing="14">
+                            <FontIcon iconLiteral="fas-calendar-day" iconSize="28" styleClass="stat-icon-primary"/>
+                            <VBox spacing="4">
+                                <Label text="REPORTE DIARIO" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d6efd;"/>
+                                <Label text="Cuotas con vencimiento el día de hoy." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox styleClass="stat-card, stat-card-success" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateGeneralReport">
+                        <HBox alignment="CENTER_LEFT" spacing="14">
+                            <FontIcon iconLiteral="fas-print" iconSize="28" styleClass="stat-icon-success"/>
+                            <VBox spacing="4">
+                                <Label text="PLANILLA GENERAL" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #198754;"/>
+                                <Label text="Todos los créditos activos de la cartera." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </HBox>
                     </VBox>
                 </HBox>
             </VBox>
 
-            <VBox styleClass="stat-card, stat-card-success" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateGeneralReport">
-                <HBox alignment="CENTER_LEFT" spacing="14">
-                    <FontIcon iconLiteral="fas-print" iconSize="28" styleClass="stat-icon-success"/>
-                    <VBox spacing="4">
-                        <Label text="PLANILLA GENERAL" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #198754;"/>
-                        <Label text="Todos los créditos activos de la cartera." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+            <Separator style="-fx-padding: 5 0;"/>
+
+            <VBox spacing="10">
+                <Label text="CARTERA DE VENTAS COMERCIALES" style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #6c757d; -fx-letter-spacing: 1px;"/>
+                <HBox spacing="20">
+                    <VBox styleClass="stat-card, stat-card-primary" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateSaleDailyReport">
+                        <HBox alignment="CENTER_LEFT" spacing="14">
+                            <FontIcon iconLiteral="fas-calendar-check" iconSize="28" styleClass="stat-icon-primary"/>
+                            <VBox spacing="4">
+                                <Label text="REPORTE DIARIO VENTAS" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #0d6efd;"/>
+                                <Label text="Cuotas de ventas que vencen hoy." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <VBox styleClass="stat-card, stat-card-success" prefWidth="350" spacing="12" style="-fx-cursor: hand;" onMouseClicked="#generateSaleGeneralReport">
+                        <HBox alignment="CENTER_LEFT" spacing="14">
+                            <FontIcon iconLiteral="fas-file-invoice-dollar" iconSize="28" styleClass="stat-icon-success"/>
+                            <VBox spacing="4">
+                                <Label text="PLANILLA GENERAL VENTAS" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #198754;"/>
+                                <Label text="Todas las ventas activas en cuotas." styleClass="text-muted" style="-fx-font-size: 12px;"/>
+                            </VBox>
+                        </HBox>
                     </VBox>
                 </HBox>
             </VBox>
-        </HBox>
-    </VBox>
+        </VBox>
+    </ScrollPane>
 </VBox>
