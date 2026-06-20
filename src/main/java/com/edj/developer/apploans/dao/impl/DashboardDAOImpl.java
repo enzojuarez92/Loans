@@ -12,7 +12,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public double getTotalPrestado() {
-        String sql = "SELECT SUM(amount) FROM loans WHERE UPPER(status) != 'CANCELED'";
+        String sql = "SELECT SUM(amount) FROM loans WHERE UPPER(TRIM(status)) != 'CANCELED'";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -32,9 +32,10 @@ public class DashboardDAOImpl implements DashboardDAO {
         return 0.0;
     }
 
+    // 💡 SOLUCIONADO: Con TRIM y UPPER limpiamos cualquier espacio fantasma
     @Override
     public int getPrestamosActivos() {
-        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(status) = 'ACTIVE'";
+        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(TRIM(status)) = 'ACTIVE'";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -45,10 +46,10 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getClientesMorosos() {
-        String sql = "SELECT COUNT(DISTINCT l.customer_name) " +
+        String sql = "SELECT COUNT(DISTINCT l.customer_id) " +
                 "FROM loan_payments lp " +
                 "JOIN loans l ON lp.loan_id = l.id " +
-                "WHERE lp.status != 'PAID' AND lp.due_date < CURRENT_DATE AND UPPER(l.status) = 'ACTIVE'";
+                "WHERE lp.status != 'PAID' AND date(lp.due_date) < date('now','localtime') AND UPPER(TRIM(l.status)) = 'ACTIVE'";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -70,10 +71,10 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getPrestamosPorEstadoCount(String status) {
-        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(status) = ?";
+        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(TRIM(status)) = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, status.toUpperCase());
+            ps.setString(1, status.trim().toUpperCase());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -83,7 +84,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getTotalClientesUnicosCount() {
-        String sql = "SELECT COUNT(DISTINCT customer_name) FROM loans";
+        String sql = "SELECT COUNT(DISTINCT customer_id) FROM loans";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -94,8 +95,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getCuotasPendientesSemanaCount() {
-        // Cuotas pactadas para vencer en los próximos 7 días
-        String sql = "SELECT COUNT(*) FROM loan_payments WHERE status != 'PAID' AND due_date BETWEEN CURRENT_DATE AND date(CURRENT_DATE, '+7 days')";
+        String sql = "SELECT COUNT(*) FROM loan_payments WHERE status != 'PAID' AND date(due_date) BETWEEN date('now','localtime') AND date('now', '+7 days')";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -106,7 +106,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public double getMontoPendienteSemanaTotal() {
-        String sql = "SELECT SUM(amount - paid_amount) FROM loan_payments WHERE status != 'PAID' AND due_date BETWEEN CURRENT_DATE AND date(CURRENT_DATE, '+7 days')";
+        String sql = "SELECT SUM(amount - paid_amount) FROM loan_payments WHERE status != 'PAID' AND date(due_date) BETWEEN date('now','localtime') AND date('now', '+7 days')";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -118,14 +118,12 @@ public class DashboardDAOImpl implements DashboardDAO {
     @Override
     public Map<String, Double> getCobrosSemanalesPorDia() {
         Map<String, Double> data = new LinkedHashMap<>();
-        // Inicializamos los días de la semana para que el gráfico no nazca vacío
         data.put("Lun", 0.0); data.put("Mar", 0.0); data.put("Mie", 0.0);
         data.put("Jue", 0.0); data.put("Vie", 0.0); data.put("Sab", 0.0); data.put("Dom", 0.0);
 
-        // Query que extrae el número de día de la semana (0=Domingo, 1=Lunes...) de los cobros efectivos de los últimos 7 días
         String sql = "SELECT strftime('%w', payment_date) as dia_num, SUM(paid_amount) " +
                 "FROM loan_payments " +
-                "WHERE payment_date IS NOT NULL AND payment_date >= date(CURRENT_DATE, '-7 days') " +
+                "WHERE payment_date IS NOT NULL AND date(payment_date) >= date('now', '-7 days') " +
                 "GROUP BY dia_num";
 
         try (Connection conn = DatabaseConfig.getConnection();
@@ -149,7 +147,7 @@ public class DashboardDAOImpl implements DashboardDAO {
     public Map<String, Double> getCobrosMensuales() {
         Map<String, Double> data = new LinkedHashMap<>();
         String sql = "SELECT strftime('%m', payment_date) as mes, SUM(paid_amount) " +
-                "FROM loan_payments WHERE (status = 'PAID' OR paid_amount > 0) AND payment_date IS NOT NULL " +
+                "FROM loan_payments WHERE payment_date IS NOT NULL " +
                 "GROUP BY mes ORDER BY mes ASC LIMIT 6";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
