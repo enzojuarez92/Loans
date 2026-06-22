@@ -187,7 +187,7 @@ public class MainController implements Initializable {
 
             if (viewCache.containsKey(viewKey)) {
                 viewNode = viewCache.get(viewKey);
-                log.debug("Vista '{}' cargada desde caché", viewKey);
+                //log.debug("Vista '{}' cargada desde caché", viewKey);
 
                 // ─── 💡 LA SOLUCIÓN DEFINITIVA: REFRESCO AUTOMÁTICO EN CACHÉ ───
                 // Recuperamos el controlador real que JavaFX le pegó al nodo raíz cuando se creó
@@ -224,6 +224,29 @@ public class MainController implements Initializable {
                             } catch (Exception ex) {
                                 log.error("No se pudo refrescar la lista de préstamos", ex);
                             }
+                        }
+                    }
+
+                    // 💡 NUEVO - Caso C: Si el usuario navega al Inventario de Productos
+                    else if (viewKey.equals(VIEW_PRODUCTOS)) {
+                        try {
+                            java.lang.reflect.Method method = controller.getClass().getMethod("handleRefresh");
+                            method.invoke(controller);
+                            log.info("🔄 ProductController (Stock) refrescado automáticamente desde el menú lateral.");
+                        } catch (Exception ex) {
+                            log.error("No se pudo refrescar el inventario de productos de forma automática", ex);
+                        }
+                    }
+
+                    // 💡 NUEVO - Caso D: Si el usuario vuelve al Listado de Ventas (por si canceló alguna)
+                    else if (viewKey.equals(VIEW_VENTAS_LIST)) {
+                        try {
+                            // Cambia "handleRefresh" por el nombre exacto de tu método de recarga en SaleListController si se llamara distinto
+                            java.lang.reflect.Method method = controller.getClass().getMethod("handleRefresh");
+                            method.invoke(controller);
+                            log.info("🔄 SaleListController refrescado automáticamente al ingresar al módulo.");
+                        } catch (Exception ex) {
+                            log.error("No se pudo refrescar el listado de ventas de forma automática", ex);
                         }
                     }
                 }

@@ -3,6 +3,7 @@ package com.edj.developer.apploans.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -20,26 +21,43 @@ public final class DatabaseConfig {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseConfig.class);
 
-    /** Ruta del archivo SQLite. Se crea automáticamente en el directorio de trabajo. */
-    private static final String DB_URL = "jdbc:sqlite:apploans.db";
+    // 💡 CAMBIO CRUCIAL: Definimos la ruta dinámica en el HOME del usuario de Windows
+    private static final String DB_URL;
+
+    static {
+        // Obtenemos la carpeta de usuario (ej: C:\Users\NombreUsuario)
+        String userHome = System.getProperty("user.home");
+
+        // Creamos una subcarpeta oculta para tu app (ej: C:\Users\NombreUsuario\.apploans)
+        File appDir = new File(userHome, ".apploans");
+
+        if (!appDir.exists()) {
+            boolean creado = appDir.mkdirs(); // Crea la carpeta si no existe
+            if (creado) {
+                log.info("Carpetas de aplicación creadas en: {}", appDir.getAbsolutePath());
+            }
+        }
+
+        // Archivo final: C:\Users\NombreUsuario\.apploans\apploans.db
+        File dbFile = new File(appDir, "apploans.db");
+        DB_URL = "jdbc:sqlite:" + dbFile.getAbsolutePath();
+    }
 
     // Credenciales del admin por defecto (seed)
     private static final String ADMIN_USERNAME = "admin";
-    private static final String ADMIN_PASSWORD = "admin123"; // En prod: usar hash BCrypt
+    private static final String ADMIN_PASSWORD = "admin123";
 
     private DatabaseConfig() {}
 
     /**
      * Retorna una nueva conexión SQLite.
-     * El caller es responsable de cerrarla (usar try-with-resources).
      */
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL);
     }
 
     /**
-     * Punto de entrada principal: inicializa tablas y siembra datos base.
-     * Llamar una sola vez al arrancar la aplicación desde Main.
+     * Inicializa tablas y siembra datos base.
      */
     public static void initDatabase() {
         log.info("Initializing database...");

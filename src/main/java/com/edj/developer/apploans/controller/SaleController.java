@@ -259,7 +259,7 @@ public class SaleController {
     }
 
     @FXML
-    private void handleRefresh() {
+    public void handleRefresh() {
         loadStats();
         updatePagination();
     }

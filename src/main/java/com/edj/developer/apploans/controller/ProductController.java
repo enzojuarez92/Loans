@@ -202,7 +202,7 @@ public class ProductController {
     }
 
     @FXML
-    private void handleRefresh() {
+    public void handleRefresh() {
         txtSearch.clear();
         cmbStockFilter.setValue("Todos");
         loadStats();

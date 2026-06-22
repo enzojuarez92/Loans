@@ -300,6 +300,8 @@ public class SaleDetailController {
             javafx.scene.Scene scene = lblCustomerName.getScene();
             if (scene != null) {
                 StackPane contentArea = (StackPane) scene.lookup("#contentArea");
+
+                // 1. Limpiamos la caché de la vista actual en el MainController
                 if (contentArea != null && contentArea.getParent() instanceof javafx.scene.layout.BorderPane borderPane) {
                     if (borderPane.getUserData() instanceof MainController mainController) {
                         try {
@@ -307,14 +309,54 @@ public class SaleDetailController {
                             field.setAccessible(true);
                             field.set(mainController, null);
                         } catch (Exception re) {
-                            System.out.println("Error de reflexión: " + re.getMessage());
+                            System.out.println("Error reflexión: " + re.getMessage());
                         }
                     }
                 }
+
+                // 2. Simulamos el click en el botón del menú lateral de Ventas
                 javafx.scene.Node navBtn = scene.lookup("#btnVentas");
                 if (navBtn instanceof Button btn) {
-                    btn.fire();
+                    btn.fire(); // Esto carga la lista general de ventas
                 }
+
+                // 3. 🚀 ASINCRONÍA VISUAL BLINDADA: Buscamos el botón de refrescar por fx:id o texto
+                javafx.application.Platform.runLater(() -> {
+                    try {
+                        if (contentArea != null) {
+                            // Intentamos buscarlo primero directamente por su fx:id
+                            javafx.scene.Node refreshNode = contentArea.lookup("#btnRefresh");
+
+                            if (refreshNode instanceof Button btnRefresh) {
+                                btnRefresh.fire();
+                                System.out.println("🚀 ¡Refresco automático ejecutado por fx:id!");
+                            } else {
+                                // Si por alguna razón el lookup por id no lo toma, barremos los botones por texto
+                                var todosLosBotones = contentArea.lookupAll(".btn");
+                                boolean encontrado = false;
+
+                                for (javafx.scene.Node nodo : todosLosBotones) {
+                                    if (nodo instanceof Button b) {
+                                        String texto = b.getText() != null ? b.getText().toLowerCase() : "";
+                                        // Si el botón dice "actualizar", "refrescar" o tiene el id correcto
+                                        if (texto.contains("actualizar") || texto.contains("refrescar") || "btnRefresh".equals(b.getId())) {
+                                            b.fire();
+                                            System.out.println("🚀 ¡Refresco automático ejecutado por texto del botón!");
+                                            encontrado = true;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (!encontrado) {
+                                    System.out.println("⚠️ No se pudo disparar el click automático. Recordá que en SaleView.fxml tu botón de refrescar debe tener fx:id=\"btnRefresh\" o el texto 'Actualizar'.");
+                                }
+                            }
+                        }
+                    } catch (Exception ex) {
+                        System.out.println("Error en el refresco asincrónico: " + ex.getMessage());
+                    }
+                });
             }
         } catch (Exception e) {
             e.printStackTrace();
