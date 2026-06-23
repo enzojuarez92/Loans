@@ -10,6 +10,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,9 @@ public class Main extends Application {
         scene.getStylesheets().add(
                 getClass().getResource("/css/style.css").toExternalForm()
         );
+
+        // 🚀 LÍNEA MÁGICA: Seteamos tu ícono personalizado
+        primaryStage.getIcons().add(new Image(getClass().getResourceAsStream("/assets/icon.png")));
 
         primaryStage.setTitle("AppLoans — Iniciar Sesión");
         primaryStage.setScene(scene);
