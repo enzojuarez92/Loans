@@ -114,7 +114,7 @@ public class SaleFormController {
         // 4. Llenar opciones de los combos de interés y cuotas
         ObservableList<Double> interests = FXCollections.observableArrayList();
         ObservableList<Integer> installments = FXCollections.observableArrayList();
-        for (double i = 0; i <= 100; i++) interests.add(i);
+        for (double i = 0; i <= 200; i++) interests.add(i);
         for (int i = 1; i <= 100; i++) installments.add(i);
         cmbInterest.setItems(interests);
         cmbInstallments.setItems(installments);

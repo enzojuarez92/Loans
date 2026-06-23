@@ -46,7 +46,7 @@
                     <HBox spacing="10" alignment="CENTER_LEFT">
                         <TextField fx:id="txtFreqName" promptText="Nombre (Ej: Semanal)" styleClass="form-control"/>
                         <TextField fx:id="txtFreqDays" promptText="Días (Ej: 7)" styleClass="form-control" prefWidth="80"/>
-                        <Button text="Agregar Frecuencia" onAction="#handleAddFrequency" styleClass="btn-primary">
+                        <Button text="Agregar Frecuencia" onAction="#handleAddFrequency" disable="true" styleClass="btn-primary">
                             <graphic><FontIcon iconLiteral="fas-plus" iconColor="white"/></graphic>
                         </Button>
                     </HBox>

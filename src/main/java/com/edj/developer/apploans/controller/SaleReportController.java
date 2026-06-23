@@ -1,14 +1,15 @@
 package com.edj.developer.apploans.controller;
 
-import com.edj.developer.apploans.model.Sale; // Asegúrate de apuntar a tu modelo real de Venta
-import com.edj.developer.apploans.model.SaleReceipt; // La clase que represente el historial de pagos de la venta
+import com.edj.developer.apploans.model.Sale;
+import com.edj.developer.apploans.model.SaleReceipt;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.print.PrinterJob;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
@@ -32,7 +33,7 @@ public class SaleReportController {
 
         // 1. Cabecera Principal y Detalles de Venta
         lblReportCustomer.setText(sale.getCustomerName());
-        lblReportProduct.setText(sale.getProductName()); // Muestra el producto de la venta financiera
+        lblReportProduct.setText(sale.getProductName());
         lblSaleId.setText("Venta #" + sale.getId());
         lblReportDate.setText("Fecha de emisión: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
 
@@ -45,17 +46,17 @@ public class SaleReportController {
         lblCustomerAddress.setText((address == null || address.trim().isEmpty()) ? "Dirección: --" : "Dirección: " + address);
         lblCustomerEmail.setText((email == null || email.trim().isEmpty()) ? "Email: --" : "Email: " + email);
 
-        // 3. Configurar Columnas (Aplicando la limpieza de hora que querías)
+        // 3. Configurar Columnas
         colNum.setCellValueFactory(cd -> new javafx.beans.property.SimpleIntegerProperty(cd.getValue().getId()).asObject());
         colDate.setCellValueFactory(cd -> {
-            String fullDate = cd.getValue().getPaymentDate(); // O getCreatedAt(), según mapees tu historial
+            String fullDate = cd.getValue().getPaymentDate();
             String dateOnly = (fullDate != null && fullDate.contains(" ")) ? fullDate.split(" ")[0] : fullDate;
             return new javafx.beans.property.SimpleStringProperty(dateOnly);
         });
         colAmount.setCellValueFactory(cd -> new javafx.beans.property.SimpleDoubleProperty(cd.getValue().getAmount()).asObject());
         colNotes.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(cd.getValue().getNotes()));
 
-        // Formateo estético para los montos monetarios en la tabla de cobros
+        // Formateo estético para los montos monetarios
         colAmount.setCellFactory(col -> new javafx.scene.control.TableCell<>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -73,7 +74,7 @@ public class SaleReportController {
         double paid = sale.getReceipts() != null
                 ? sale.getReceipts().stream().mapToDouble(SaleReceipt::getAmount).sum()
                 : 0.0;
-        double pending = sale.getTotalAmount() - paid; // Total de la venta financiera menos lo entregado
+        double pending = sale.getTotalAmount() - paid;
 
         lblTotalPaid.setText(String.format("$ %,.2f", paid));
         lblReportTotalPending.setText(String.format("$ %,.2f", pending));
@@ -81,43 +82,23 @@ public class SaleReportController {
 
     @FXML
     private void handlePrint() {
-        PrinterJob job = PrinterJob.createPrinterJob();
-        if (job == null) {
-            System.err.println("No se pudo crear el trabajo de impresión (¿Hay impresoras instaladas?)");
-            return;
+        // 💡 REUTILIZACIÓN COMPLETA: Creamos la ventana de previsualización unificada
+        Stage modalStage = new Stage();
+        modalStage.initModality(Modality.APPLICATION_MODAL);
+
+        String title = "Resumen de Cuenta - " + lblSaleId.getText();
+        modalStage.setTitle(title);
+
+        // Pasamos nuestro reportContainer de FXML (que actúa como la grilla/hoja interna)
+        PrintModalController printController = new PrintModalController(reportContainer, title);
+
+        Scene scene = new Scene(printController.getRootView(), 850, 650);
+        if (getClass().getResource("/css/style.css") != null) {
+            scene.getStylesheets().add(getClass().getResource("/css/style.css").toExternalForm());
         }
 
-        if (job.showPrintDialog(reportContainer.getScene().getWindow())) {
-            javafx.print.Printer printer = job.getPrinter();
-
-            // Configuración idéntica de página A4 con márgenes finos
-            javafx.print.PageLayout pageLayout = printer.createPageLayout(
-                    javafx.print.Paper.A4,
-                    javafx.print.PageOrientation.PORTRAIT,
-                    14.17, 14.17, 14.17, 14.17
-            );
-
-            job.getJobSettings().setPageLayout(pageLayout);
-
-            double printableWidth = pageLayout.getPrintableWidth();
-            double reportWidth = reportContainer.getBoundsInLocal().getWidth();
-
-            // Ajuste y escalado dinámico en caso de desborde horizontal
-            double scale = 1.0;
-            if (reportWidth > printableWidth) {
-                scale = printableWidth / reportWidth;
-            }
-
-            javafx.scene.transform.Scale scaleTransform = new javafx.scene.transform.Scale(scale, scale);
-            reportContainer.getTransforms().add(scaleTransform);
-
-            boolean success = job.printPage(reportContainer);
-            reportContainer.getTransforms().remove(scaleTransform);
-
-            if (success) {
-                job.endJob();
-            }
-        }
+        modalStage.setScene(scene);
+        modalStage.showAndWait();
     }
 
     @FXML

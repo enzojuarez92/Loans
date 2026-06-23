@@ -154,6 +154,11 @@
                         <Label text="Finalizadas" style="-fx-font-size: 13; -fx-text-fill: #495057;"/>
                         <Label fx:id="lblCompletedSalesCount" text="0" style="-fx-font-weight: bold;"/>
                     </HBox>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <FontIcon iconLiteral="fas-times-circle" iconSize="15" iconColor="#dc3545"/>
+                        <Label text="Anuladas" style="-fx-font-size: 13; -fx-text-fill: #495057;"/>
+                        <Label fx:id="lblCanceledSalesCount" text="0" style="-fx-font-weight: bold;"/>
+                    </HBox>
                 </VBox>
             </VBox>
 

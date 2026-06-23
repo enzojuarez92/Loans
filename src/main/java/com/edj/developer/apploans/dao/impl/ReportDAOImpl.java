@@ -72,7 +72,7 @@ public class ReportDAOImpl implements ReportDAO {
         return list;
     }
 
-    // 💡 AGREGADO: Vencimientos de Cuotas de Ventas del Día de Hoy
+    // 💡 CORREGIDO: Vencimientos de Cuotas de Ventas del Día de Hoy (Excluyendo Anuladas)
     @Override
     public List<DailyReportItem> getDailyDueSalesInstallments() {
         List<DailyReportItem> list = new ArrayList<>();
@@ -84,6 +84,7 @@ public class ReportDAOImpl implements ReportDAO {
             JOIN customers c ON s.customer_id = c.id
             WHERE date(sp.due_date) = date('now', 'localtime')
               AND sp.status != 'PAID'
+              AND s.status != 'CANCELED'  -- 🚀 Excluye cuotas de ventas anuladas
             ORDER BY customer ASC
             """;
 
@@ -92,7 +93,7 @@ public class ReportDAOImpl implements ReportDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(new DailyReportItem(
-                        rs.getInt("sale_id"), // Mapea al id de la venta comercial
+                        rs.getInt("sale_id"),
                         rs.getString("customer"),
                         rs.getInt("installment_number"),
                         rs.getDouble("amount"),
@@ -103,7 +104,7 @@ public class ReportDAOImpl implements ReportDAO {
         return list;
     }
 
-    // 💡 AGREGADO: Planilla General de Ventas Activas (Cuota Pendiente Próxima)
+    // 💡 VERIFICADO: Planilla General de Ventas Activas (Solo estado ACTIVE)
     @Override
     public List<GeneralReportItem> getActiveSalesInstallments() {
         List<GeneralReportItem> list = new ArrayList<>();
@@ -124,7 +125,7 @@ public class ReportDAOImpl implements ReportDAO {
             while (rs.next()) {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
-                        rs.getInt("sale_id"), // ID de la venta comercial
+                        rs.getInt("sale_id"),
                         rs.getDouble("amount")
                 ));
             }

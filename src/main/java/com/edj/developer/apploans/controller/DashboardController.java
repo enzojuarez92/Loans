@@ -2,7 +2,6 @@ package com.edj.developer.apploans.controller;
 
 import com.edj.developer.apploans.dao.DashboardDAO;
 import com.edj.developer.apploans.dao.impl.DashboardDAOImpl;
-import com.edj.developer.apploans.config.DatabaseConfig;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -15,29 +14,21 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.Label;
 import javafx.util.Duration;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
 public class DashboardController {
 
-    // KPIs Superiores e información General
     @FXML private Label lblTotalOut, lblTotalIn, lblMorosos, lblActiveLoans, lblTotalCustomers, lblLiveDateTime;
-
-    // Préstamos FXML
-    @FXML private Label lblTotalLoans;
-    @FXML private Label lblActiveLoansCount, lblCompletedLoansCount, lblCanceledLoansCount;
+    @FXML private Label lblTotalLoans, lblActiveLoansCount, lblCompletedLoansCount, lblCanceledLoansCount;
     @FXML private PieChart chartStatusPie;
     @FXML private Label lblCuotasBadge, lblWeeklyTotal;
     @FXML private BarChart<String, Number> chartWeeklyPayments;
 
-    // 💡 NUEVOS ELEMENTOS FXML PARA VENTAS
-    @FXML private Label lblTotalSales, lblActiveSalesCount, lblCompletedSalesCount;
+    // FXML Elements for Sales (Including Canceled)
+    @FXML private Label lblTotalSales, lblActiveSalesCount, lblCompletedSalesCount, lblCanceledSalesCount;
     @FXML private PieChart chartSalesPie;
     @FXML private BarChart<String, Number> chartMonthlySales;
 
@@ -54,16 +45,14 @@ public class DashboardController {
                 }
             });
         }
-
         refreshAllDashboard();
     }
 
     private void refreshAllDashboard() {
-        loadRealStats();
+        loadLoanStats();
         setupWeeklyChart();
         setupStatusPieChart();
 
-        // Carga de la sección Comercial
         loadSalesStats();
         setupSalesPieChart();
         setupMonthlySalesChart();
@@ -78,88 +67,78 @@ public class DashboardController {
         clock.play();
     }
 
-    private void loadRealStats() {
-        double out = dashboardDAO.getTotalPrestado();
-        double in = dashboardDAO.getTotalCobrado();
-        int active = dashboardDAO.getPrestamosActivos();
-        int morosos = dashboardDAO.getClientesMorosos();
+    private void loadLoanStats() {
+        double out = dashboardDAO.getTotalOutstandingCapital();
+        double in = dashboardDAO.getTotalRecoveredCapital();
+        int active = dashboardDAO.getActiveLoansCount();
+        int delinquent = dashboardDAO.getDelinquentCustomersCount();
 
         lblTotalOut.setText(String.format("$ %,.2f", out));
         lblTotalIn.setText(String.format("$ %,.2f", in));
-        lblMorosos.setText(String.valueOf(morosos));
+        lblMorosos.setText(String.valueOf(delinquent));
         if (lblActiveLoans != null) lblActiveLoans.setText(String.valueOf(active));
 
-        int totalLoans = dashboardDAO.getPrestamosTotalesCount();
-        int activos = dashboardDAO.getPrestamosPorEstadoCount("ACTIVE");
-        int completados = dashboardDAO.getPrestamosPorEstadoCount("COMPLETED");
-        int cancelados = dashboardDAO.getPrestamosPorEstadoCount("CANCELED");
+        int totalLoans = dashboardDAO.getTotalLoansCount();
+        int activeCount = dashboardDAO.getLoansCountByStatus("ACTIVE");
+        int completedCount = dashboardDAO.getLoansCountByStatus("COMPLETED");
+        int canceledCount = dashboardDAO.getLoansCountByStatus("CANCELED");
 
         lblTotalLoans.setText(String.valueOf(totalLoans));
-        lblActiveLoansCount.setText(String.valueOf(activos));
-        lblCompletedLoansCount.setText(String.valueOf(completados));
-        lblCanceledLoansCount.setText(String.valueOf(cancelados));
+        lblActiveLoansCount.setText(String.valueOf(activeCount));
+        lblCompletedLoansCount.setText(String.valueOf(completedCount));
+        lblCanceledLoansCount.setText(String.valueOf(canceledCount));
 
-        lblTotalCustomers.setText(String.valueOf(dashboardDAO.getTotalClientesUnicosCount()));
+        lblTotalCustomers.setText(String.valueOf(dashboardDAO.getTotalUniqueCustomersCount()));
 
-        int cuotasSemana = dashboardDAO.getCuotasPendientesSemanaCount();
-        double montoSemana = dashboardDAO.getMontoPendienteSemanaTotal();
+        int weeklyCount = dashboardDAO.getWeeklyPendingInstallmentsCount();
+        double weeklyAmount = dashboardDAO.getWeeklyPendingAmountTotal();
 
-        lblCuotasBadge.setText(cuotasSemana + " Cuotas");
-        lblWeeklyTotal.setText(String.format("$ %,.2f", montoSemana));
+        lblCuotasBadge.setText(weeklyCount + " Cuotas");
+        lblWeeklyTotal.setText(String.format("$ %,.2f", weeklyAmount));
     }
 
-    // 💡 LÓGICA DIRECTA: Estadísticas de la Cartera de Ventas Comerciales desde la Base de Datos
     private void loadSalesStats() {
-        int total = 0, activos = 0, finalizados = 0;
-        String sql = "SELECT UPPER(TRIM(status)), COUNT(*) FROM sales GROUP BY UPPER(TRIM(status))";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                String status = rs.getString(1);
-                int count = rs.getInt(2);
-                total += count;
-                if ("ACTIVE".equals(status)) activos = count;
-                else if ("COMPLETED".equals(status) || "PAID".equals(status)) finalizados = count;
-            }
-        } catch (Exception e) { e.printStackTrace(); }
+        // 🚀 Delegación total al DAO en inglés
+        int total = dashboardDAO.getTotalSalesCount();
+        int active = dashboardDAO.getSalesCountByStatus("ACTIVE");
+        int completed = dashboardDAO.getSalesCountByStatus("COMPLETED");
+        int canceled = dashboardDAO.getSalesCountByStatus("CANCELED");
 
         lblTotalSales.setText(String.valueOf(total));
-        lblActiveSalesCount.setText(String.valueOf(activos));
-        lblCompletedSalesCount.setText(String.valueOf(finalizados));
+        lblActiveSalesCount.setText(String.valueOf(active));
+        lblCompletedSalesCount.setText(String.valueOf(completed));
+        if (lblCanceledSalesCount != null) {
+            lblCanceledSalesCount.setText(String.valueOf(canceled));
+        }
     }
 
     private void setupWeeklyChart() {
         chartWeeklyPayments.getData().clear();
         XYChart.Series<String, Number> series = new XYChart.Series<>();
-        Map<String, Double> datosSemanales = dashboardDAO.getCobrosSemanalesPorDia();
+        Map<String, Double> weeklyData = dashboardDAO.getWeeklyCollectionsByDay();
 
-        boolean tieneDatos = datosSemanales.values().stream().anyMatch(val -> val > 0);
-        if (!tieneDatos) {
-            series.getData().add(new XYChart.Data<>("Lun", 15000));
-            series.getData().add(new XYChart.Data<>("Mar", 24000));
-            series.getData().add(new XYChart.Data<>("Mie", 12000));
-            series.getData().add(new XYChart.Data<>("Jue", 45000));
-            series.getData().add(new XYChart.Data<>("Vie", 32000));
-            series.getData().add(new XYChart.Data<>("Sab", 18000));
-            series.getData().add(new XYChart.Data<>("Dom", 0));
-        } else {
-            datosSemanales.forEach((dia, total) -> series.getData().add(new XYChart.Data<>(dia, total)));
+        boolean hasData = weeklyData.values().stream().anyMatch(val -> val > 0);
+        if (!hasData) {
+            weeklyData.put("Lun", 15000.0); weeklyData.put("Mar", 24000.0); weeklyData.put("Mie", 12000.0);
+            weeklyData.put("Jue", 45000.0); weeklyData.put("Vie", 32000.0); weeklyData.put("Sab", 18000.0);
+            weeklyData.put("Dom", 0.0);
         }
+
+        weeklyData.forEach((day, total) -> series.getData().add(new XYChart.Data<>(day, total)));
         chartWeeklyPayments.getData().add(series);
     }
 
     private void setupStatusPieChart() {
-        int activos = Integer.parseInt(lblActiveLoansCount.getText());
-        int completados = Integer.parseInt(lblCompletedLoansCount.getText());
-        int cancelados = Integer.parseInt(lblCanceledLoansCount.getText());
+        int active = Integer.parseInt(lblActiveLoansCount.getText());
+        int completed = Integer.parseInt(lblCompletedLoansCount.getText());
+        int canceled = Integer.parseInt(lblCanceledLoansCount.getText());
 
-        if (activos == 0 && completados == 0 && cancelados == 0) { activos = 1; completados = 1; }
+        if (active == 0 && completed == 0 && canceled == 0) { active = 1; completed = 1; }
 
         ObservableList<PieChart.Data> data = FXCollections.observableArrayList(
-                new PieChart.Data("Activos", activos),
-                new PieChart.Data("Completados", completados),
-                new PieChart.Data("Cancelados", cancelados)
+                new PieChart.Data("Activos", active),
+                new PieChart.Data("Completados", completed),
+                new PieChart.Data("Cancelados", canceled)
         );
         chartStatusPie.setData(data);
         if (!data.isEmpty() && data.get(0).getNode() != null) {
@@ -169,57 +148,43 @@ public class DashboardController {
         }
     }
 
-    // 💡 NUEVO: Configuración de Dona para Ventas Comerciales
     private void setupSalesPieChart() {
-        int activos = Integer.parseInt(lblActiveSalesCount.getText());
-        int completados = Integer.parseInt(lblCompletedSalesCount.getText());
+        int active = Integer.parseInt(lblActiveSalesCount.getText());
+        int completed = Integer.parseInt(lblCompletedSalesCount.getText());
+        int canceled = lblCanceledSalesCount != null ? Integer.parseInt(lblCanceledSalesCount.getText()) : 0;
 
-        if (activos == 0 && completados == 0) { activos = 1; completados = 2; }
+        if (active == 0 && completed == 0 && canceled == 0) { active = 1; completed = 2; }
 
+        // 🚀 Ahora se renderiza el tercer estado en la torta de Ventas
         ObservableList<PieChart.Data> data = FXCollections.observableArrayList(
-                new PieChart.Data("Activas", activos),
-                new PieChart.Data("Finalizadas", completados)
+                new PieChart.Data("Activas", active),
+                new PieChart.Data("Finalizadas", completed),
+                new PieChart.Data("Anuladas", canceled)
         );
         chartSalesPie.setData(data);
         if (!data.isEmpty() && data.get(0).getNode() != null) {
-            data.get(0).getNode().setStyle("-fx-pie-color: #198754;"); // Verde corporativo
-            data.get(1).getNode().setStyle("-fx-pie-color: #0d6efd;"); // Azul comercial
+            data.get(0).getNode().setStyle("-fx-pie-color: #198754;");
+            data.get(1).getNode().setStyle("-fx-pie-color: #0d6efd;");
+            if (data.size() > 2 && data.get(2).getNode() != null) {
+                data.get(2).getNode().setStyle("-fx-pie-color: #dc3545;"); // Rojo para canceladas
+            }
         }
     }
 
-    // 💡 NUEVO: Recaudación Histórica Mensual de Ventas Comerciales
     private void setupMonthlySalesChart() {
         chartMonthlySales.getData().clear();
         XYChart.Series<String, Number> series = new XYChart.Series<>();
 
-        Map<String, Double> mensualMap = new LinkedHashMap<>();
-        mensualMap.put("Ene", 0.0); mensualMap.put("Feb", 0.0); mensualMap.put("Mar", 0.0);
-        mensualMap.put("Abr", 0.0); mensualMap.put("May", 0.0); mensualMap.put("Jun", 0.0);
+        // 🚀 Consumimos el mapa directamente desde el DAO
+        Map<String, Double> monthlyMap = dashboardDAO.getMonthlySalesRevenue();
 
-        String sql = "SELECT strftime('%m', payment_date) as mes, SUM(paid_amount) " +
-                "FROM sales_payments WHERE payment_date IS NOT NULL GROUP BY mes ORDER BY mes ASC LIMIT 6";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                String mes = rs.getString(1);
-                double total = rs.getDouble(2);
-                String label = switch (mes) {
-                    case "01" -> "Ene"; case "02" -> "Feb"; case "03" -> "Mar";
-                    case "04" -> "Abr"; case "05" -> "May"; default -> "Jun";
-                };
-                mensualMap.put(label, total);
-            }
-        } catch (Exception e) { e.printStackTrace(); }
-
-        boolean tieneDatos = mensualMap.values().stream().anyMatch(v -> v > 0);
-        if (!tieneDatos) {
-            // Valores fallback estéticos
-            mensualMap.put("Ene", 85000.0); mensualMap.put("Feb", 110000.0); mensualMap.put("Mar", 95000.0);
-            mensualMap.put("Abr", 140000.0); mensualMap.put("May", 165000.0); mensualMap.put("Jun", 130000.0);
+        boolean hasData = monthlyMap.values().stream().anyMatch(v -> v > 0);
+        if (!hasData) {
+            monthlyMap.put("Ene", 85000.0); monthlyMap.put("Feb", 110000.0); monthlyMap.put("Mar", 95000.0);
+            monthlyMap.put("Abr", 140000.0); monthlyMap.put("May", 165000.0); monthlyMap.put("Jun", 130000.0);
         }
 
-        mensualMap.forEach((mes, total) -> series.getData().add(new XYChart.Data<>(mes, total)));
+        monthlyMap.forEach((month, total) -> series.getData().add(new XYChart.Data<>(month, total)));
         chartMonthlySales.getData().add(series);
     }
 }

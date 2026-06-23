@@ -17,7 +17,7 @@ public class PrintModalController {
     private final BorderPane root;
     private final VBox a4PaperSheet;
 
-    public PrintModalController(GridPane reportGrid, String reportTitle) {
+    public PrintModalController(javafx.scene.layout.Region reportGrid, String reportTitle) {
         root = new BorderPane();
         root.setStyle("-fx-background-color: #525659;");
 
@@ -71,13 +71,49 @@ public class PrintModalController {
 
         root.setCenter(scrollPane);
 
-        // Eventos
+        // ─── EVENTOS ───────────────────────────────────────────────────────
         btnClose.setOnAction(e -> ((Stage) btnClose.getScene().getWindow()).close());
+
         btnPrint.setOnAction(e -> {
             PrinterJob job = PrinterJob.createPrinterJob();
             if (job != null && job.showPrintDialog(btnPrint.getScene().getWindow())) {
+                javafx.print.Printer printer = job.getPrinter();
+
+                javafx.print.PageLayout pageLayout = printer.createPageLayout(
+                        javafx.print.Paper.A4,
+                        javafx.print.PageOrientation.PORTRAIT,
+                        14.17, 14.17, 14.17, 14.17
+                );
+                job.getJobSettings().setPageLayout(pageLayout);
+
+                // 1. Calculamos la escala
+                double printableWidth = pageLayout.getPrintableWidth();
+                double reportWidth = a4PaperSheet.getBoundsInLocal().getWidth();
+
+                double scale = 1.0;
+                if (reportWidth > printableWidth) {
+                    scale = printableWidth / reportWidth;
+                }
+
+                javafx.scene.transform.Scale scaleTransform = new javafx.scene.transform.Scale(scale, scale);
+
+                // 2. 💡 EL TRUCO: Guardamos el efecto actual y lo removemos para la impresión
+                javafx.scene.effect.Effect originalEffect = a4PaperSheet.getEffect();
+                a4PaperSheet.setEffect(null);
+
+                // 3. Aplicamos la escala
+                a4PaperSheet.getTransforms().add(scaleTransform);
+
+                // 4. Imprimimos (ahora la hoja va a salir blanca y limpia, sin sombras raras)
                 boolean success = job.printPage(a4PaperSheet);
-                if (success) job.endJob();
+
+                // 5. Restauramos todo para que en la pantalla del usuario siga viéndose de diez
+                a4PaperSheet.getTransforms().remove(scaleTransform);
+                a4PaperSheet.setEffect(originalEffect); // <-- Le devolvemos su sombra flotante
+
+                if (success) {
+                    job.endJob();
+                }
             }
         });
     }

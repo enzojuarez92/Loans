@@ -3,20 +3,23 @@ package com.edj.developer.apploans.dao;
 import java.util.Map;
 
 public interface DashboardDAO {
-    double getTotalPrestado();
-    double getTotalCobrado();
-    int getPrestamosActivos();
-    int getClientesMorosos();
+    double getTotalOutstandingCapital();
+    double getTotalRecoveredCapital();
+    int getActiveLoansCount();
+    int getDelinquentCustomersCount();
 
-    // NÚMEROS REALES PARA LA DONA Y CONTADORES
-    int getPrestamosTotalesCount();
-    int getPrestamosPorEstadoCount(String status);
-    int getTotalClientesUnicosCount();
+    int getTotalLoansCount();
+    int getLoansCountByStatus(String status);
+    int getTotalUniqueCustomersCount();
 
-    // DATOS REALES PARA EL GRÁFICO DE BARRAS SEMANAL
-    int getCuotasPendientesSemanaCount();
-    double getMontoPendienteSemanaTotal();
-    Map<String, Double> getCobrosSemanalesPorDia(); // Agrupado de Lunes a Domingo
+    int getWeeklyPendingInstallmentsCount();
+    double getWeeklyPendingAmountTotal();
+    Map<String, Double> getWeeklyCollectionsByDay();
 
-    Map<String, Double> getCobrosMensuales();
+    Map<String, Double> getMonthlyLoanCollections();
+
+    // Sales Methods
+    int getTotalSalesCount();
+    int getSalesCountByStatus(String status);
+    Map<String, Double> getMonthlySalesRevenue();
 }
