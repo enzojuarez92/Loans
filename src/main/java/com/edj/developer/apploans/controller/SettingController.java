@@ -13,9 +13,13 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.FileChooser;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.io.File;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,6 +27,8 @@ import java.sql.Statement;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.ParseException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -139,6 +145,7 @@ public class SettingController implements Initializable {
         colFreqAction.setCellFactory(param -> new TableCell<>() {
             private final Button btnDelete = new Button();
             {
+                btnDelete.setDisable(true);
                 btnDelete.getStyleClass().add("btn-danger-sm");
                 FontIcon icon = new FontIcon("fas-trash-alt");
                 icon.setIconColor(javafx.scene.paint.Color.WHITE);
@@ -336,6 +343,115 @@ public class SettingController implements Initializable {
         } catch (Exception e) {
             e.printStackTrace();
             AlertHelper.showError("Error", "No se pudo actualizar", "Ocurrió un problema guardando en la base de datos.");
+        }
+    }
+
+    // Asegurate de importar estas clases al principio del controlador:
+// import java.io.File;
+// import java.nio.file.Files;
+// import java.nio.file.StandardCopyOption;
+// import java.time.LocalDateTime;
+// import java.time.format.DateTimeFormatter;
+// import com.edj.developer.apploans.util.AlertHelper;
+
+    @FXML
+    private void handleCreateBackup() {
+        try {
+            // 1. Nombre de tu archivo de base de datos actual
+            String dbName = "apploans.db";
+            File currentDb = new File(dbName);
+
+            if (!currentDb.exists()) {
+                AlertHelper.showError("Error de Backup", "Archivo no encontrado",
+                        "No se pudo encontrar el archivo base '" + dbName + "' en el directorio raíz.");
+                return;
+            }
+
+            // 2. Crear la carpeta 'backups' en el directorio de ejecución
+            File backupDir = new File("backups");
+            if (!backupDir.exists()) {
+                backupDir.mkdir();
+            }
+
+            // 3. Generar el nombre del archivo usando la fecha y hora actual
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            String timestamp = LocalDateTime.now().format(formatter);
+            String backupFileName = "backup_" + timestamp + ".db";
+            File destFile = new File(backupDir, backupFileName);
+
+            // 4. Copiar el archivo físico de manera segura
+            Files.copy(currentDb.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+            // 5. Notificar al usuario con la ruta exacta
+            AlertHelper.showInfo("Respaldo Exitoso", "Copia de Seguridad Creada",
+                    "El backup se guardó correctamente como:\n" + destFile.getAbsolutePath());
+
+        } catch (Exception e) {
+            //log.error("Error al crear la copia de seguridad", e);
+            AlertHelper.showError("Error de Sistema", "No se pudo crear el Backup",
+                    "Ocurrió un problema al intentar duplicar el archivo: " + e.getMessage());
+        }
+    }
+
+    // Asegurate de importar estas clases adicionales en tu Controller:
+// import javafx.stage.FileChooser;
+// import javafx.application.Platform;
+
+    @FXML
+    private void handleRestoreBackup() {
+        try {
+            // 1. Configurar el explorador para que busque archivos .db
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Seleccionar Copia de Seguridad (.db)");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Base de datos SQLite (*.db)", "*.db")
+            );
+
+            // Abrir la ventana modal
+            File selectedBackup = fileChooser.showOpenDialog(txtBusinessName.getScene().getWindow());
+
+            if (selectedBackup == null) {
+                return; // El usuario canceló la selección
+            }
+
+            // 2. Advertencia Crítica al usuario
+            Optional<ButtonType> confirm = AlertHelper.showConfirm(
+                    "⚠️ ADVERTENCIA CRÍTICA",
+                    "¿Está completamente seguro de restaurar esta base de datos?",
+                    "Esta acción reemplazará TODOS los datos actuales por los del backup.\n" +
+                            "Se cerrará la aplicación automáticamente al finalizar para aplicar los cambios."
+            );
+
+            if (confirm.isPresent() && !confirm.get().getButtonData().isCancelButton()) {
+
+                // 3. Obtener la ruta exacta de destino usando la misma lógica de tu DatabaseConfig
+                String userHome = System.getProperty("user.home");
+                File appDir = new File(userHome, ".apploans");
+                File targetDb = new File(appDir, "apploans.db");
+
+                // 4. Copiar el archivo del backup pisando el actual de forma segura
+                // (Nota: Si hay consultas concurrentes pesadas puede trabar, pero al estar en settings suele estar libre)
+                Files.copy(selectedBackup.toPath(), targetDb.toPath(), StandardCopyOption.REPLACE_EXISTING);
+
+                // 5. Informar y forzar reinicio limpio
+                AlertHelper.showInfo(
+                        "Restauración Completada",
+                        "Datos Restaurados con Éxito",
+                        "El sistema se cerrará ahora. Volvé a iniciarlo para ver los datos cargados."
+                );
+
+                // Cierra la app de JavaFX limpiamente
+                Platform.exit();
+                System.exit(0);
+            }
+
+        } catch (Exception e) {
+            //log.error("Error al restaurar la copia de seguridad", e);
+            AlertHelper.showError(
+                    "Error de Restauración",
+                    "No se pudo restaurar el archivo",
+                    "Ocurrió un fallo al intentar sobreescribir la base de datos: " + e.getMessage()
+            );
         }
     }
 }

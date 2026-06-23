@@ -80,12 +80,31 @@
                         <PasswordField fx:id="txtNewPassword" styleClass="form-control" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
                     </GridPane>
 
-                    <HBox alignment="CENTER_RIGHT" style="-fx-padding: 20 0 0 0;">
+                    <HBox alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
                         <Button text="Guardar Cambios Generales" onAction="#handleUpdateGeneral" styleClass="btn-primary">
                             <graphic><FontIcon iconLiteral="fas-save" iconColor="white"/></graphic>
                         </Button>
                     </HBox>
+
+                    <Separator style="-fx-padding: 10 0 10 0;"/>
+
+                    <VBox spacing="10">
+                        <Label text="Copias de Seguridad" styleClass="card-title" style="-fx-font-size: 16px;"/>
+                        <Label text="Gestioná los respaldos del sistema. Al restaurar una copia anterior, se reemplazarán de forma permanente todos los datos actuales." wrapText="true" styleClass="text-muted" style="-fx-font-size: 13px;"/>
+
+                        <HBox alignment="CENTER_LEFT" spacing="15" style="-fx-padding: 10 0 0 0;">
+                            <Button text="Crear Copia de Seguridad" onAction="#handleCreateBackup" styleClass="btn-success" style="-fx-background-color: #28a745; -fx-text-fill: white;">
+                                <graphic><FontIcon iconLiteral="fas-database" iconColor="white"/></graphic>
+                            </Button>
+
+                            <Button text="Restaurar desde Backup" onAction="#handleRestoreBackup" styleClass="btn-danger" style="-fx-background-color: #dc3545; -fx-text-fill: white;">
+                                <graphic><FontIcon iconLiteral="fas-upload" iconColor="white"/></graphic>
+                            </Button>
+                        </HBox>
+                    </VBox>
                 </VBox>
+
+
             </Tab>
         </TabPane>
 
