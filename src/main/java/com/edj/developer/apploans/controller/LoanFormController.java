@@ -27,7 +27,7 @@ public class LoanFormController {
     @FXML private ComboBox<Double> cmbAmount;
     @FXML private ComboBox<String> cmbFrequency;
     @FXML private ComboBox<Integer> cmbInstallments;
-    @FXML private ComboBox<Double> cmbInterest;
+    @FXML private TextField txtInterest;
     @FXML private Label lblTotalAmount, lblInstallmentSummary, lblInterestEarned;
     @FXML private Button btnCreateLoan;
 
@@ -110,11 +110,8 @@ public class LoanFormController {
         cmbFrequency.setItems(FXCollections.observableArrayList(frequencyMap.keySet()));
 
         // 4. Intereses y Cuotas
-        ObservableList<Double> interests = FXCollections.observableArrayList();
         ObservableList<Integer> installments = FXCollections.observableArrayList();
-        for (double i = 0; i <= 100; i++) interests.add(i);
         for (int i = 1; i <= 100; i++) installments.add(i);
-        cmbInterest.setItems(interests);
         cmbInstallments.setItems(installments);
     }
 
@@ -213,21 +210,23 @@ public class LoanFormController {
     private void setupListeners() {
         Runnable updateAction = this::calculatePreview;
         cmbAmount.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
-        cmbInterest.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbInstallments.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbFrequency.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         cmbCustomer.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         dpStartDate.valueProperty().addListener((o, ov, nv) -> updateAction.run());
+        txtInterest.textProperty().addListener((o, ov, nv) -> updateAction.run());
     }
 
     private void calculatePreview() {
         try {
             double amount = cmbAmount.getConverter().fromString(cmbAmount.getEditor().getText());
 
-            // Como quitamos editable, ahora los leemos de forma directa y segura mediante .getValue()
-            if (cmbInterest.getValue() == null || cmbInstallments.getValue() == null) return;
-            double interestRate = cmbInterest.getValue();
+            if (cmbInstallments.getValue() == null) return;
             int installments = cmbInstallments.getValue();
+
+            // 🚀 NUEVO: Lectura segura del TextField de interés
+            String interestText = txtInterest.getText().trim().replace(",", ".");
+            double interestRate = interestText.isEmpty() ? 0.0 : Double.parseDouble(interestText);
 
             if (amount <= 0 || installments <= 0) { resetLabels(); return; }
 
@@ -288,8 +287,11 @@ public class LoanFormController {
             loan.setCustomerId(cmbCustomer.getValue().getId());
 
             double amount = cmbAmount.getValue();
-            double interest = cmbInterest.getValue();
             int inst = cmbInstallments.getValue();
+
+            // 🚀 NUEVO: Lectura segura para la base de datos
+            String interestText = txtInterest.getText().trim().replace(",", ".");
+            double interest = interestText.isEmpty() ? 0.0 : Double.parseDouble(interestText);
 
             loan.setAmount(amount);
             loan.setInterestRate(interest);

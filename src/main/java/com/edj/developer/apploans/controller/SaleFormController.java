@@ -36,7 +36,7 @@ public class SaleFormController {
     @FXML private ComboBox<Product> cmbProduct;
     @FXML private ComboBox<String> cmbFrequency;
     @FXML private ComboBox<Integer> cmbInstallments;
-    @FXML private ComboBox<Double> cmbInterest;
+    @FXML private TextField txtInterest;
 
     @FXML private Label lblTotalAmount;         // El grande de "TOTAL LIQUIDACIÓN"
     @FXML private Label lblProductPrice;        // Precio del Artículo
@@ -92,7 +92,6 @@ public class SaleFormController {
             }
         };
 
-        cmbInterest.setConverter(doubleConv);
         cmbInstallments.setConverter(intConv);
     }
 
@@ -112,11 +111,8 @@ public class SaleFormController {
         cmbFrequency.setValue("DIARIO");
 
         // 4. Llenar opciones de los combos de interés y cuotas
-        ObservableList<Double> interests = FXCollections.observableArrayList();
         ObservableList<Integer> installments = FXCollections.observableArrayList();
-        for (double i = 0; i <= 200; i++) interests.add(i);
         for (int i = 1; i <= 100; i++) installments.add(i);
-        cmbInterest.setItems(interests);
         cmbInstallments.setItems(installments);
     }
 
@@ -127,9 +123,11 @@ public class SaleFormController {
         cmbCustomer.valueProperty().addListener((o, ov, nv) -> updateAction.run());
         dpStartDate.valueProperty().addListener((o, ov, nv) -> updateAction.run());
 
-        // Al ser editables, escuchamos los cambios en el editor de texto directo
+        // Escuchamos las cuotas (editor del combo)
         cmbInstallments.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
-        cmbInterest.getEditor().textProperty().addListener((o, ov, nv) -> updateAction.run());
+
+        // 🚀 NUEVO: Escuchamos el tipeo directo en el TextField del interés
+        txtInterest.textProperty().addListener((o, ov, nv) -> updateAction.run());
     }
 
     private void calculatePreview() {
@@ -137,8 +135,12 @@ public class SaleFormController {
             Product prod = cmbProduct.getValue();
             if (prod == null) { resetLabels(); return; }
 
-            double price = prod.getBasePrice(); // Cambiar por prod.getBasePrice() si financiás al costo básico
-            double interestRate = cmbInterest.getConverter().fromString(cmbInterest.getEditor().getText());
+            double price = prod.getBasePrice();
+
+            // 🚀 NUEVO: Leemos el texto del TextField reemplazando comas si el usuario se confunde
+            String interestText = txtInterest.getText().trim().replace(",", ".");
+            double interestRate = interestText.isEmpty() ? 0.0 : Double.parseDouble(interestText);
+
             int installments = cmbInstallments.getConverter().fromString(cmbInstallments.getEditor().getText());
 
             if (price <= 0 || installments <= 0) { resetLabels(); return; }
@@ -157,6 +159,8 @@ public class SaleFormController {
             resetLabels();
         }
     }
+
+
 
     @FXML
     private void handleCreateSale() {
@@ -199,7 +203,11 @@ public class SaleFormController {
             sale.setFrequency(cmbFrequency.getValue());
 
             double price = selectedProd.getBasePrice();
-            double interestRate = Double.parseDouble(cmbInterest.getEditor().getText().replaceAll("[^\\d.]", ""));
+
+            // 🚀 NUEVO: Parseo seguro del interés tipeado
+            String interestText = txtInterest.getText().trim().replace(",", ".");
+            double interestRate = interestText.isEmpty() ? 0.0 : Double.parseDouble(interestText);
+
             int installments = Integer.parseInt(cmbInstallments.getEditor().getText().replaceAll("[^\\d.]", ""));
 
             sale.setSellingPrice(price);
@@ -210,12 +218,11 @@ public class SaleFormController {
             sale.setTotalAmount(totalAmount);
             sale.setStatus("ACTIVE");
 
-            // Mapeo de días según frecuencia para el plan de cuotas del SaleDAOImpl
             int intervalDays = switch (cmbFrequency.getValue().toUpperCase()) {
                 case "DIARIO" -> 1;
                 case "SEMANAL" -> 7;
                 case "QUINCENAL" -> 15;
-                default -> 30; // MENSUAL
+                default -> 30;
             };
 
             return saleDAO.saveWithTransaction(sale, intervalDays);
