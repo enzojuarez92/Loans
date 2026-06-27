@@ -73,7 +73,7 @@
 
                     <VBox spacing="8" GridPane.rowIndex="2" GridPane.columnIndex="1">
                         <Label text="Interés Mensual (%)" styleClass="form-label"/>
-                        <TextField fx:id="txtInterest" maxWidth="Infinity" styleClass="form-control" text="0.0"/>
+                        <TextField fx:id="txtInterest" maxWidth="Infinity" styleClass="form-control" text="0.0" prefHeight="46"/>
                     </VBox>
                 </GridPane>
 

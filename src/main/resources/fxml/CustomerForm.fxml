@@ -92,13 +92,15 @@
 
                 <HBox spacing="16">
                     <VBox spacing="4" prefWidth="220">
-                        <Label text="Fecha de Nacimiento" styleClass="form-label"/>
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="Fecha de Nacimiento" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
                         <DatePicker fx:id="dpBirthDate"
                                     promptText="dd/mm/aaaa"
                                     styleClass="form-control"
                                     maxWidth="Infinity"/>
-                        <Label fx:id="errBirthDate" styleClass="field-error" visible="false"
-                               managed="false"/>
+                        <Label fx:id="errBirthDate" styleClass="field-error" visible="false" managed="false"/>
                     </VBox>
 
                     <VBox spacing="4" prefWidth="180">
@@ -127,7 +129,10 @@
 
                 <HBox spacing="16">
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Teléfono / Celular" styleClass="form-label"/>
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="Teléfono / Celular" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
                         <HBox spacing="0">
                             <Label text="+54" styleClass="input-prefix"/>
                             <TextField fx:id="txtPhone"
@@ -135,8 +140,7 @@
                                        styleClass="form-control input-with-prefix"
                                        HBox.hgrow="ALWAYS"/>
                         </HBox>
-                        <Label fx:id="errPhone" styleClass="field-error" visible="false"
-                               managed="false"/>
+                        <Label fx:id="errPhone" styleClass="field-error" visible="false" managed="false"/>
                     </VBox>
 
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
@@ -152,13 +156,15 @@
 
                 <HBox spacing="16">
                     <VBox spacing="4" HBox.hgrow="ALWAYS">
-                        <Label text="Dirección" styleClass="form-label"/>
+                        <HBox spacing="4" alignment="CENTER_LEFT">
+                            <Label text="Dirección" styleClass="form-label"/>
+                            <Label text="*" styleClass="required-mark"/>
+                        </HBox>
                         <TextField fx:id="txtAddress"
                                    promptText="Calle, Número, Piso/Dpto"
                                    styleClass="form-control"
                                    maxWidth="Infinity"/>
-                        <Label fx:id="errAddress" styleClass="field-error" visible="false"
-                               managed="false"/>
+                        <Label fx:id="errAddress" styleClass="field-error" visible="false" managed="false"/>
                     </VBox>
 
                     <VBox spacing="4" prefWidth="200">

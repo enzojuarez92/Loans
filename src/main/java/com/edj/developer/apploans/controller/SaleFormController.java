@@ -48,6 +48,8 @@ public class SaleFormController {
     private final CustomerDAO customerDAO = new CustomerDAOImpl();
     private final ProductDAO productDAO = new ProductDAOImpl();
 
+    private final ObservableList<Customer> allActiveCustomers = FXCollections.observableArrayList();
+
     @FXML
     public void initialize() {
         dpStartDate.setValue(LocalDate.now());
@@ -96,11 +98,16 @@ public class SaleFormController {
     }
 
     private void loadData() {
-        // 1. Clientes activos
+        // 1. Clientes activos apuntados correctamente a la lista global
         List<Customer> actives = customerDAO.findAll().stream()
                 .filter(c -> "ACTIVO".equalsIgnoreCase(c.getStatus()))
                 .collect(Collectors.toList());
-        cmbCustomer.setItems(FXCollections.observableArrayList(actives));
+
+        // 🚀 LA CORRECCIÓN CRÍTICA:
+        allActiveCustomers.setAll(actives); // <-- Llenamos la lista global
+        cmbCustomer.setItems(allActiveCustomers); // <-- Le asignamos la lista al ComboBox
+
+        setupCustomerFilter();
 
         // 2. SOLUCIÓN PRODUCTOS: Usamos tu findAllPaged trayendo un límite alto para el combo de los que tengan stock
         List<Product> products = productDAO.findAllPaged("", "CON STOCK", 500, 0);
@@ -128,6 +135,61 @@ public class SaleFormController {
 
         // 🚀 NUEVO: Escuchamos el tipeo directo en el TextField del interés
         txtInterest.textProperty().addListener((o, ov, nv) -> updateAction.run());
+    }
+    private void setupCustomerFilter() {
+        javafx.collections.transformation.FilteredList<Customer> filteredCustomers =
+                new javafx.collections.transformation.FilteredList<>(allActiveCustomers, p -> true);
+
+        cmbCustomer.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            // Guardamos la posición del cursor para evitar saltos molestos al tipear rápido
+            int caretPosition = cmbCustomer.getEditor().getCaretPosition();
+
+            Customer selected = cmbCustomer.getSelectionModel().getSelectedItem();
+            if (selected != null && cmbCustomer.getConverter().toString(selected).equals(newValue)) return;
+
+            if (newValue == null || newValue.trim().isEmpty()) {
+                filteredCustomers.setPredicate(p -> true);
+            } else {
+                String filterText = newValue.toLowerCase().trim();
+                filteredCustomers.setPredicate(customer -> {
+                    String fullName = (customer.getFullName() != null) ? customer.getFullName().toLowerCase() : "";
+                    String docNumber = (customer.getDocNumber() != null) ? customer.getDocNumber().toLowerCase() : "";
+                    return fullName.contains(filterText) || docNumber.contains(filterText);
+                });
+            }
+
+            cmbCustomer.setItems(filteredCustomers);
+
+            // Restauramos el cursor en su lugar exacto
+            cmbCustomer.getEditor().positionCaret(caretPosition);
+
+            if (newValue != null && !newValue.isEmpty() && !filteredCustomers.isEmpty()) {
+                if (!cmbCustomer.isShowing()) {
+                    cmbCustomer.show();
+                }
+            } else {
+                cmbCustomer.hide();
+            }
+        });
+
+        // Validación al perder el foco
+        cmbCustomer.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal) {
+                String text = cmbCustomer.getEditor().getText();
+                Customer matchingCustomer = allActiveCustomers.stream()
+                        .filter(c -> cmbCustomer.getConverter().toString(c).equals(text))
+                        .findFirst().orElse(null);
+
+                if (matchingCustomer != null) {
+                    cmbCustomer.getSelectionModel().select(matchingCustomer);
+                } else {
+                    if (cmbCustomer.getSelectionModel().getSelectedItem() == null) {
+                        cmbCustomer.getEditor().clear();
+                    }
+                }
+                cmbCustomer.setItems(allActiveCustomers);
+            }
+        });
     }
 
     private void calculatePreview() {

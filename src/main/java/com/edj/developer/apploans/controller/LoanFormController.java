@@ -120,24 +120,35 @@ public class LoanFormController {
                 new javafx.collections.transformation.FilteredList<>(allActiveCustomers, p -> true);
 
         cmbCustomer.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
-            Platform.runLater(() -> {
-                Customer selected = cmbCustomer.getSelectionModel().getSelectedItem();
-                if (selected != null && cmbCustomer.getConverter().toString(selected).equals(newValue)) return;
+            // Guardamos la posición actual del cursor para que no le pegue saltos al cliente al tipear
+            int caretPosition = cmbCustomer.getEditor().getCaretPosition();
 
-                if (newValue == null || newValue.trim().isEmpty()) {
-                    filteredCustomers.setPredicate(p -> true);
-                } else {
-                    String filterText = newValue.toLowerCase().trim();
-                    filteredCustomers.setPredicate(customer -> {
-                        String fullName = (customer.getFullName() != null) ? customer.getFullName().toLowerCase() : "";
-                        String docNumber = (customer.getDocNumber() != null) ? customer.getDocNumber().toLowerCase() : "";
-                        return fullName.contains(filterText) || docNumber.contains(filterText);
-                    });
+            Customer selected = cmbCustomer.getSelectionModel().getSelectedItem();
+            if (selected != null && cmbCustomer.getConverter().toString(selected).equals(newValue)) return;
+
+            if (newValue == null || newValue.trim().isEmpty()) {
+                filteredCustomers.setPredicate(p -> true);
+            } else {
+                String filterText = newValue.toLowerCase().trim();
+                filteredCustomers.setPredicate(customer -> {
+                    String fullName = (customer.getFullName() != null) ? customer.getFullName().toLowerCase() : "";
+                    String docNumber = (customer.getDocNumber() != null) ? customer.getDocNumber().toLowerCase() : "";
+                    return fullName.contains(filterText) || docNumber.contains(filterText);
+                });
+            }
+
+            cmbCustomer.setItems(filteredCustomers);
+
+            // Restauramos el cursor en su posición exacta
+            cmbCustomer.getEditor().positionCaret(caretPosition);
+
+            if (newValue != null && !newValue.isEmpty() && !filteredCustomers.isEmpty()) {
+                if (!cmbCustomer.isShowing()) {
+                    cmbCustomer.show();
                 }
-                cmbCustomer.setItems(filteredCustomers);
-                if (!newValue.isEmpty() && !filteredCustomers.isEmpty()) cmbCustomer.show();
-                else cmbCustomer.hide();
-            });
+            } else {
+                cmbCustomer.hide();
+            }
         });
 
         cmbCustomer.focusedProperty().addListener((obs, oldVal, newVal) -> {
@@ -150,7 +161,9 @@ public class LoanFormController {
                 if (matchingCustomer != null) {
                     cmbCustomer.getSelectionModel().select(matchingCustomer);
                 } else {
-                    if (cmbCustomer.getSelectionModel().getSelectedItem() == null) cmbCustomer.getEditor().clear();
+                    if (cmbCustomer.getSelectionModel().getSelectedItem() == null) {
+                        cmbCustomer.getEditor().clear();
+                    }
                 }
                 cmbCustomer.setItems(allActiveCustomers);
             }
