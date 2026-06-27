@@ -56,7 +56,7 @@
 
                     <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="0">
                         <Label text="Seleccionar Producto" styleClass="form-label"/>
-                        <ComboBox fx:id="cmbProduct" maxWidth="Infinity" promptText="Seleccione artículo..." styleClass="form-control"/>
+                        <ComboBox fx:id="cmbProduct" maxWidth="Infinity" promptText="Seleccione artículo..." styleClass="form-control" editable="true"/>
                     </VBox>
 
                     <VBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">

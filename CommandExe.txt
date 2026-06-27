@@ -1,0 +1,1 @@
+ & "C:\Users\Juare\.jdks\corretto-21.0.10\bin\jpackage" --type exe --input target/ --dest output --name AppLoans --icon src/main/resources/assets/icon.ico --main-jar apploans-1.0.0.jar --main-class com.edj.developer.apploans.Launcher --win-shortcut --win-menu --win-dir-chooser

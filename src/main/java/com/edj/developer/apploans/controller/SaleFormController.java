@@ -49,6 +49,7 @@ public class SaleFormController {
     private final ProductDAO productDAO = new ProductDAOImpl();
 
     private final ObservableList<Customer> allActiveCustomers = FXCollections.observableArrayList();
+    private final ObservableList<Product> allActiveProducts = FXCollections.observableArrayList();
 
     @FXML
     public void initialize() {
@@ -111,7 +112,10 @@ public class SaleFormController {
 
         // 2. SOLUCIÓN PRODUCTOS: Usamos tu findAllPaged trayendo un límite alto para el combo de los que tengan stock
         List<Product> products = productDAO.findAllPaged("", "CON STOCK", 500, 0);
-        cmbProduct.setItems(FXCollections.observableArrayList(products));
+        allActiveProducts.setAll(products); // <-- Llenamos la lista global
+        cmbProduct.setItems(allActiveProducts); // <-- Asignamos al combo
+
+        setupProductFilter();
 
         // 3. Frecuencias
         cmbFrequency.setItems(FXCollections.observableArrayList("DIARIO", "SEMANAL", "QUINCENAL", "MENSUAL"));
@@ -121,6 +125,61 @@ public class SaleFormController {
         ObservableList<Integer> installments = FXCollections.observableArrayList();
         for (int i = 1; i <= 100; i++) installments.add(i);
         cmbInstallments.setItems(installments);
+    }
+
+    private void setupProductFilter() {
+        javafx.collections.transformation.FilteredList<Product> filteredProducts =
+                new javafx.collections.transformation.FilteredList<>(allActiveProducts, p -> true);
+
+        cmbProduct.getEditor().textProperty().addListener((observable, oldValue, newValue) -> {
+            // Guardamos posición del cursor para evitar saltos bruscos
+            int caretPosition = cmbProduct.getEditor().getCaretPosition();
+
+            Product selected = cmbProduct.getSelectionModel().getSelectedItem();
+            if (selected != null && cmbProduct.getConverter().toString(selected).equals(newValue)) return;
+
+            if (newValue == null || newValue.trim().isEmpty()) {
+                filteredProducts.setPredicate(p -> true);
+            } else {
+                String filterText = newValue.toLowerCase().trim();
+                filteredProducts.setPredicate(product -> {
+                    String name = (product.getName() != null) ? product.getName().toLowerCase() : "";
+                    return name.contains(filterText);
+                });
+            }
+
+            cmbProduct.setItems(filteredProducts);
+
+            // Restauramos cursor
+            cmbProduct.getEditor().positionCaret(caretPosition);
+
+            if (newValue != null && !newValue.isEmpty() && !filteredProducts.isEmpty()) {
+                if (!cmbProduct.isShowing()) {
+                    cmbProduct.show();
+                }
+            } else {
+                cmbProduct.hide();
+            }
+        });
+
+        // Validación de seguridad al perder el foco en productos
+        cmbProduct.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal) {
+                String text = cmbProduct.getEditor().getText();
+                Product matchingProduct = allActiveProducts.stream()
+                        .filter(p -> cmbProduct.getConverter().toString(p).equals(text))
+                        .findFirst().orElse(null);
+
+                if (matchingProduct != null) {
+                    cmbProduct.getSelectionModel().select(matchingProduct);
+                } else {
+                    if (cmbProduct.getSelectionModel().getSelectedItem() == null) {
+                        cmbProduct.getEditor().clear();
+                    }
+                }
+                cmbProduct.setItems(allActiveProducts);
+            }
+        });
     }
 
     private void setupListeners() {
@@ -194,6 +253,11 @@ public class SaleFormController {
 
     private void calculatePreview() {
         try {
+            if (cmbProduct.getEditor().getText().trim().isEmpty()) {
+                resetLabels();
+                return;
+            }
+
             Product prod = cmbProduct.getValue();
             if (prod == null) { resetLabels(); return; }
 
