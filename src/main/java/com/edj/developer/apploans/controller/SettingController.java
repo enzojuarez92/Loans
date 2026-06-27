@@ -357,64 +357,61 @@ public class SettingController implements Initializable {
     @FXML
     private void handleCreateBackup() {
         try {
-            // 1. Nombre de tu archivo de base de datos actual
-            String dbName = "apploans.db";
-            File currentDb = new File(dbName);
+            // 🚀 CORRECCIÓN: Apuntar siempre a la carpeta segura del usuario
+            String userHome = System.getProperty("user.home");
+            File appDir = new File(userHome, ".apploans");
+            File currentDb = new File(appDir, "apploans.db");
 
             if (!currentDb.exists()) {
                 AlertHelper.showError("Error de Backup", "Archivo no encontrado",
-                        "No se pudo encontrar el archivo base '" + dbName + "' en el directorio raíz.");
+                        "No se pudo encontrar la base de datos en: " + currentDb.getAbsolutePath());
                 return;
             }
 
-            // 2. Crear la carpeta 'backups' en el directorio de ejecución
-            File backupDir = new File("backups");
+            // 🚀 CORRECCIÓN: Crear la carpeta de backups en el directorio del usuario para evitar bloqueos de Windows
+            File backupDir = new File(appDir, "backups");
             if (!backupDir.exists()) {
-                backupDir.mkdir();
+                backupDir.mkdirs(); // mkdirs crea el árbol completo si falta
             }
 
-            // 3. Generar el nombre del archivo usando la fecha y hora actual
+            // Generar nombre único con fecha
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
             String timestamp = LocalDateTime.now().format(formatter);
             String backupFileName = "backup_" + timestamp + ".db";
             File destFile = new File(backupDir, backupFileName);
 
-            // 4. Copiar el archivo físico de manera segura
+            // Copiar el archivo físico
             Files.copy(currentDb.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            // 5. Notificar al usuario con la ruta exacta
             AlertHelper.showInfo("Respaldo Exitoso", "Copia de Seguridad Creada",
-                    "El backup se guardó correctamente como:\n" + destFile.getAbsolutePath());
+                    "El backup se guardó correctamente en:\n" + destFile.getAbsolutePath());
 
         } catch (Exception e) {
-            //log.error("Error al crear la copia de seguridad", e);
             AlertHelper.showError("Error de Sistema", "No se pudo crear el Backup",
                     "Ocurrió un problema al intentar duplicar el archivo: " + e.getMessage());
         }
     }
 
-    // Asegurate de importar estas clases adicionales en tu Controller:
-// import javafx.stage.FileChooser;
-// import javafx.application.Platform;
-
     @FXML
     private void handleRestoreBackup() {
         try {
-            // 1. Configurar el explorador para que busque archivos .db
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Seleccionar Copia de Seguridad (.db)");
             fileChooser.getExtensionFilters().add(
                     new FileChooser.ExtensionFilter("Base de datos SQLite (*.db)", "*.db")
             );
 
-            // Abrir la ventana modal
-            File selectedBackup = fileChooser.showOpenDialog(txtBusinessName.getScene().getWindow());
-
-            if (selectedBackup == null) {
-                return; // El usuario canceló la selección
+            // 🚀 MEJORA: Abrir el explorador directo en la carpeta de backups del usuario para facilitarle la vida
+            String userHome = System.getProperty("user.home");
+            File appDir = new File(userHome, ".apploans");
+            File backupDir = new File(appDir, "backups");
+            if (backupDir.exists()) {
+                fileChooser.setInitialDirectory(backupDir);
             }
 
-            // 2. Advertencia Crítica al usuario
+            File selectedBackup = fileChooser.showOpenDialog(txtBusinessName.getScene().getWindow());
+            if (selectedBackup == null) return;
+
             Optional<ButtonType> confirm = AlertHelper.showConfirm(
                     "⚠️ ADVERTENCIA CRÍTICA",
                     "¿Está completamente seguro de restaurar esta base de datos?",
@@ -423,30 +420,22 @@ public class SettingController implements Initializable {
             );
 
             if (confirm.isPresent() && !confirm.get().getButtonData().isCancelButton()) {
-
-                // 3. Obtener la ruta exacta de destino usando la misma lógica de tu DatabaseConfig
-                String userHome = System.getProperty("user.home");
-                File appDir = new File(userHome, ".apploans");
                 File targetDb = new File(appDir, "apploans.db");
 
-                // 4. Copiar el archivo del backup pisando el actual de forma segura
-                // (Nota: Si hay consultas concurrentes pesadas puede trabar, pero al estar en settings suele estar libre)
+                // Copiar el backup pisando el archivo real
                 Files.copy(selectedBackup.toPath(), targetDb.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-                // 5. Informar y forzar reinicio limpio
                 AlertHelper.showInfo(
                         "Restauración Completada",
                         "Datos Restaurados con Éxito",
                         "El sistema se cerrará ahora. Volvé a iniciarlo para ver los datos cargados."
                 );
 
-                // Cierra la app de JavaFX limpiamente
                 Platform.exit();
                 System.exit(0);
             }
 
         } catch (Exception e) {
-            //log.error("Error al restaurar la copia de seguridad", e);
             AlertHelper.showError(
                     "Error de Restauración",
                     "No se pudo restaurar el archivo",
