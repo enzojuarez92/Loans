@@ -47,16 +47,20 @@ public class ReportDAOImpl implements ReportDAO {
     @Override
     public List<GeneralReportItem> getActiveLoansInstallments() {
         List<GeneralReportItem> list = new ArrayList<>();
+        // 🌟 CORREGIDO: Agrupamos correctamente por préstamo y calculamos el total pendiente real
         String sql = """
-            SELECT (c.first_name || ' ' || c.last_name) AS customer, l.id AS loan_id, lp.amount
-            FROM loans l
-            JOIN customers c ON l.customer_id = c.id
-            JOIN loan_payments lp ON lp.loan_id = l.id
-            WHERE l.status = 'ACTIVE'
-              AND lp.status != 'PAID'
-            GROUP BY l.id
-            ORDER BY customer ASC
-            """;
+        SELECT 
+            (c.first_name || ' ' || c.last_name) AS customer, 
+            l.id AS loan_id, 
+            SUM(lp.amount - lp.paid_amount) AS total_pendiente
+        FROM loans l
+        JOIN customers c ON l.customer_id = c.id
+        JOIN loan_payments lp ON lp.loan_id = l.id
+        WHERE l.status = 'ACTIVE'
+          AND lp.status != 'PAID'
+        GROUP BY l.id, c.first_name, c.last_name
+        ORDER BY customer ASC
+        """;
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -65,7 +69,7 @@ public class ReportDAOImpl implements ReportDAO {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
                         rs.getInt("loan_id"),
-                        rs.getDouble("amount")
+                        rs.getDouble("total_pendiente") // 💡 Pasamos el saldo pendiente total del préstamo activo
                 ));
             }
         } catch (SQLException e) { e.printStackTrace(); }

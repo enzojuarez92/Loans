@@ -100,49 +100,49 @@
     </columnHeader>
 
     <detail>
-        <band height="24">
+        <band height="16">
             <frame>
-                <reportElement x="0" y="0" width="265" height="24" uuid="6f30f5b1-7a6c-4bca-9ba4-5690b2326b01"/>
+                <reportElement x="0" y="0" width="265" height="16" uuid="6f30f5b1-7a6c-4bca-9ba4-5690b2326b01"/>
                 <box>
                     <leftPen lineWidth="1.0" lineColor="#000000"/>
                     <bottomPen lineWidth="1.0" lineColor="#000000"/>
                     <rightPen lineWidth="1.0" lineColor="#000000"/>
                 </box>
                 <textField>
-                    <reportElement x="0" y="0" width="30" height="24" uuid="b19c2fca-f725-4c07-ba71-d6ef1f4a9b6e"/>
+                    <reportElement x="0" y="0" width="30" height="16" uuid="b19c2fca-f725-4c07-ba71-d6ef1f4a9b6e"/>
                     <box>
                         <rightPen lineWidth="1.0" lineColor="#000000"/>
                     </box>
                     <textElement textAlignment="Center" verticalAlignment="Middle">
-                        <font size="9" isBold="true"/>
+                        <font size="8" isBold="true"/>
                     </textElement>
                     <textFieldExpression><![CDATA["#" + $F{id}]]></textFieldExpression>
                 </textField>
                 <textField>
-                    <reportElement x="30" y="0" width="130" height="24" uuid="fe327db1-09ab-48e0-bb15-0b0bbbc4123b"/>
+                    <reportElement x="30" y="0" width="130" height="16" uuid="fe327db1-09ab-48e0-bb15-0b0bbbc4123b"/>
                     <box leftPadding="5">
                         <rightPen lineWidth="1.0" lineColor="#000000"/>
                     </box>
                     <textElement verticalAlignment="Middle">
-                        <font size="9"/>
+                        <font size="8"/>
                     </textElement>
                     <textFieldExpression><![CDATA[$F{name}]]></textFieldExpression>
                 </textField>
                 <textField pattern="$ #,##0.00">
-                    <reportElement x="160" y="0" width="65" height="24" uuid="a3cf2d01-1bfa-49e0-8815-11bbbbc4123c"/>
+                    <reportElement x="160" y="0" width="65" height="16" uuid="a3cf2d01-1bfa-49e0-8815-11bbbbc4123c"/>
                     <box rightPadding="4">
                         <rightPen lineWidth="1.0" lineColor="#000000"/>
                     </box>
                     <textElement textAlignment="Right" verticalAlignment="Middle">
-                        <font size="9" isBold="true"/>
+                        <font size="8" isBold="true"/>
                     </textElement>
                     <textFieldExpression><![CDATA[$F{value}]]></textFieldExpression>
                 </textField>
                 <staticText>
-                    <reportElement x="225" y="0" width="40" height="24" forecolor="#495057" uuid="3d2cf5b1-7a6c-4bca-9ba4-5690b2326b05"/>
+                    <reportElement x="225" y="0" width="40" height="16" forecolor="#495057" uuid="3d2cf5b1-7a6c-4bca-9ba4-5690b2326b05"/>
                     <box leftPadding="4"/>
                     <textElement verticalAlignment="Middle">
-                        <font size="9"/>
+                        <font size="8"/>
                     </textElement>
                     <text><![CDATA[$]]></text>
                 </staticText>

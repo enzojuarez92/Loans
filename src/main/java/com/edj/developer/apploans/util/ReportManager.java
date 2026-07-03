@@ -6,6 +6,7 @@ import net.sf.jasperreports.engine.*;
 import net.sf.jasperreports.engine.data.JRMapCollectionDataSource;
 import net.sf.jasperreports.view.JasperViewer;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,7 +17,7 @@ public class ReportManager {
 
     public static void launchReport(String reportTitle, List<?> rawData, String codeType) {
         try {
-            // 1. Map properties dynamically into generic fields for the jrxml
+            // 1. Mapeo dinámico de propiedades
             List<Map<String, ?>> mappedData = new ArrayList<>();
 
             for (Object item : rawData) {
@@ -35,7 +36,6 @@ public class ReportManager {
                 mappedData.add(map);
             }
 
-            // Fallback row if data list is empty
             if (mappedData.isEmpty()) {
                 Map<String, Object> emptyMap = new HashMap<>();
                 emptyMap.put("id", 0);
@@ -44,15 +44,12 @@ public class ReportManager {
                 mappedData.add(emptyMap);
             }
 
-            // 2. Wrap data inside Jasper structure
             JRMapCollectionDataSource dataSource = new JRMapCollectionDataSource(mappedData);
 
-            // 3. Setup header parameters
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("REPORT_TITLE", reportTitle.toUpperCase());
             parameters.put("CODE_TYPE", codeType);
 
-            // 4. Locate and compile JRXML resource file
             InputStream reportStream = ReportManager.class.getResourceAsStream("/reports/CollectionTwoColumns.jrxml");
             if (reportStream == null) {
                 System.err.println("ERROR: Could not find CollectionTwoColumns.jrxml in resources/reports/");
@@ -62,13 +59,22 @@ public class ReportManager {
             JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
 
-            // 5. Open Jasper native viewer on FX Application Thread to prevent interface lockups
-            javafx.application.Platform.runLater(() -> {
-                JasperViewer viewer = new JasperViewer(jasperPrint, false);
-                viewer.setTitle(reportTitle);
-                viewer.setVisible(true);
-                viewer.toFront();
-            });
+            // 🌟 INTENTO PREMIUM: Exporta a PDF y delega la impresión al S.O.
+            try {
+                File tempFile = File.createTempFile("Planilla_" + codeType + "_", ".pdf");
+                tempFile.deleteOnExit();
+                JasperExportManager.exportReportToPdfFile(jasperPrint, tempFile.getAbsolutePath());
+
+                if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)) {
+                    java.awt.Desktop.getDesktop().open(tempFile);
+                } else {
+                    mostrarVisorInternoJasper(jasperPrint, reportTitle);
+                }
+            } catch (Exception ex) {
+                // 🚀 SALVADA: Entra acá si el entorno no soporta la acción o no posee lector de PDF
+                System.err.println("Aviso: No se pudo abrir el PDF nativo, usando visor Jasper. " + ex.getMessage());
+                mostrarVisorInternoJasper(jasperPrint, reportTitle);
+            }
 
         } catch (JRException e) {
             e.printStackTrace();
@@ -77,7 +83,6 @@ public class ReportManager {
 
     public static void launchSaleStatement(com.edj.developer.apploans.model.Sale sale, String formattedPaid, String formattedPending) {
         try {
-            // 1. Convert SaleReceipt objects into generic maps for the table datasource
             List<Map<String, ?>> mappedData = new ArrayList<>();
             for (com.edj.developer.apploans.model.SaleReceipt receipt : sale.getReceipts()) {
                 Map<String, Object> map = new HashMap<>();
@@ -88,7 +93,6 @@ public class ReportManager {
                 mappedData.add(map);
             }
 
-            // Fallback row if history list is empty
             if (mappedData.isEmpty()) {
                 Map<String, Object> emptyMap = new HashMap<>();
                 emptyMap.put("id", 0);
@@ -98,19 +102,17 @@ public class ReportManager {
                 mappedData.add(emptyMap);
             }
 
-            net.sf.jasperreports.engine.data.JRMapCollectionDataSource dataSource = new net.sf.jasperreports.engine.data.JRMapCollectionDataSource(mappedData);
+            JRMapCollectionDataSource dataSource = new JRMapCollectionDataSource(mappedData);
 
-            // 2. Map header and summary properties
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("CUSTOMER_NAME", sale.getCustomerName());
-            parameters.put("CUSTOMER_PHONE", ""); // Leave empty or map if your model has it
+            parameters.put("CUSTOMER_PHONE", "");
             parameters.put("CUSTOMER_ADDRESS", "");
             parameters.put("CUSTOMER_EMAIL", "");
             parameters.put("SALE_ID_TEXT", "Venta #" + sale.getId() + " - " + sale.getProductName());
             parameters.put("TOTAL_PAID", formattedPaid);
             parameters.put("TOTAL_PENDING", formattedPending);
 
-            // 3. Compile and build viewer window
             InputStream reportStream = ReportManager.class.getResourceAsStream("/reports/sale_statement.jrxml");
             if (reportStream == null) {
                 System.err.println("ERROR: Could not find sale_statement.jrxml");
@@ -120,15 +122,36 @@ public class ReportManager {
             JasperReport jasperReport = JasperCompileManager.compileReport(reportStream);
             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
 
-            javafx.application.Platform.runLater(() -> {
-                JasperViewer viewer = new JasperViewer(jasperPrint, false);
-                viewer.setTitle("Resumen de Cuenta - " + sale.getCustomerName());
-                viewer.setVisible(true);
-                viewer.toFront();
-            });
+            // 🌟 INTENTO PREMIUM: Para el reporte individual de ventas
+            try {
+                File tempFile = File.createTempFile("Resumen_Venta_", ".pdf");
+                tempFile.deleteOnExit();
+                JasperExportManager.exportReportToPdfFile(jasperPrint, tempFile.getAbsolutePath());
+
+                if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)) {
+                    java.awt.Desktop.getDesktop().open(tempFile);
+                } else {
+                    mostrarVisorInternoJasper(jasperPrint, "Resumen de Cuenta - " + sale.getCustomerName());
+                }
+            } catch (Exception ex) {
+                System.err.println("Aviso: No se pudo abrir el PDF nativo del resumen, usando visor Jasper. " + ex.getMessage());
+                mostrarVisorInternoJasper(jasperPrint, "Resumen de Cuenta - " + sale.getCustomerName());
+            }
 
         } catch (JRException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * 💡 Método Auxiliar Unificado para mitigar redundancias y fallas en hilos de JavaFX.
+     */
+    private static void mostrarVisorInternoJasper(JasperPrint jasperPrint, String title) {
+        javafx.application.Platform.runLater(() -> {
+            JasperViewer viewer = new JasperViewer(jasperPrint, false);
+            viewer.setTitle(title);
+            viewer.setVisible(true);
+            viewer.toFront();
+        });
     }
 }
