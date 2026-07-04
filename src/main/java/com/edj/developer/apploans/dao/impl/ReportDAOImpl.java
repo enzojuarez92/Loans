@@ -52,7 +52,7 @@ public class ReportDAOImpl implements ReportDAO {
         SELECT 
             (c.first_name || ' ' || c.last_name) AS customer, 
             l.id AS loan_id, 
-            SUM(lp.amount - lp.paid_amount) AS total_pendiente
+            MAX(lp.amount) AS valor_cuota
         FROM loans l
         JOIN customers c ON l.customer_id = c.id
         JOIN loan_payments lp ON lp.loan_id = l.id
@@ -69,7 +69,7 @@ public class ReportDAOImpl implements ReportDAO {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
                         rs.getInt("loan_id"),
-                        rs.getDouble("total_pendiente") // 💡 Pasamos el saldo pendiente total del préstamo activo
+                        rs.getDouble("valor_cuota") // 💡 Pasamos el saldo pendiente total del préstamo activo
                 ));
             }
         } catch (SQLException e) { e.printStackTrace(); }
@@ -113,7 +113,9 @@ public class ReportDAOImpl implements ReportDAO {
     public List<GeneralReportItem> getActiveSalesInstallments() {
         List<GeneralReportItem> list = new ArrayList<>();
         String sql = """
-            SELECT (c.first_name || ' ' || c.last_name) AS customer, s.id AS sale_id, sp.amount
+            SELECT (c.first_name || ' ' || c.last_name) AS customer, 
+            s.id AS sale_id, 
+            MAX(sp.amount) AS valor_cuota
             FROM sales s
             JOIN customers c ON s.customer_id = c.id
             JOIN sales_payments sp ON sp.sale_id = s.id
@@ -130,7 +132,7 @@ public class ReportDAOImpl implements ReportDAO {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
                         rs.getInt("sale_id"),
-                        rs.getDouble("amount")
+                        rs.getDouble("valor_cuota")
                 ));
             }
         } catch (SQLException e) { e.printStackTrace(); }
