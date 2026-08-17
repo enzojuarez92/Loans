@@ -106,16 +106,28 @@ public class SaleDAOImpl implements SaleDAO {
     public List<Sale> findAllPaged(String search, String statusFilter, int limit, int offset) {
         List<Sale> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder("""
-        SELECT s.*, (c.first_name || ' ' || c.last_name) AS customer_name, p.name AS product_name 
-        FROM sales s
-        JOIN customers c ON s.customer_id = c.id
-        JOIN products p ON s.product_id = p.id
-        WHERE 1=1
-        """);
+    SELECT s.*, (c.first_name || ' ' || c.last_name) AS customer_name, p.name AS product_name 
+    FROM sales s
+    JOIN customers c ON s.customer_id = c.id
+    JOIN products p ON s.product_id = p.id
+    WHERE 1=1
+    """);
+
+        boolean isNumeric = false;
+        int searchId = -1;
 
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND ((c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
+            String cleanSearch = search.trim();
+            // Verificamos si el usuario ingresó únicamente un número
+            if (cleanSearch.matches("\\d+")) {
+                isNumeric = true;
+                searchId = Integer.parseInt(cleanSearch);
+                sql.append(" AND (s.id = ? OR (c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
+            } else {
+                sql.append(" AND ((c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
+            }
         }
+
         if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
             sql.append(" AND s.status = ?");
         }
@@ -128,9 +140,13 @@ public class SaleDAOImpl implements SaleDAO {
             int idx = 1;
             if (search != null && !search.trim().isEmpty()) {
                 String filter = "%" + search.trim() + "%";
+                if (isNumeric) {
+                    ps.setInt(idx++, searchId); // Asigna el id para s.id = ?
+                }
                 ps.setString(idx++, filter);
                 ps.setString(idx++, filter);
             }
+
             if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
                 ps.setString(idx++, statusFilter);
             }
@@ -339,9 +355,14 @@ public class SaleDAOImpl implements SaleDAO {
             try (PreparedStatement psUp = conn.prepareStatement(sqlUpdatePayment)) {
                 for (TempCuotaSale c : list) {
                     if (remaining <= 0) break;
+
                     double debt = c.amount - c.paidAmount;
-                    if (remaining >= debt) {
+
+                    // ✅ Agregamos tolerancia de 0.01 centavos para evitar imprecisión de 'double'
+                    if ((remaining + 0.01) >= debt) {
                         remaining -= debt;
+                        if (remaining < 0) remaining = 0; // Prevenimos remanente negativo por la tolerancia
+
                         psUp.setDouble(1, c.amount);
                         psUp.setString(2, "PAID");
                         psUp.setInt(3, c.id);

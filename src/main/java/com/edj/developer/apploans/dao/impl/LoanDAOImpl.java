@@ -579,8 +579,10 @@ public class LoanDAOImpl implements LoanDAO {
 
                     double deudoCuota = cuota.amount - cuota.paidAmount;
 
-                    if (dineroRestante >= deudoCuota) {
+                    // ✅ AGREGAMOS TOLERANCIA (+0.01) PARA ABSORBER ERRORES DE IMPRECISIÓN DE 'double'
+                    if ((dineroRestante + 0.01) >= deudoCuota) {
                         dineroRestante -= deudoCuota;
+                        if (dineroRestante < 0) dineroRestante = 0; // Prevenimos residuos negativos por la tolerancia
 
                         psUpPay.setDouble(1, cuota.amount);
                         psUpPay.setString(2, "PAID");

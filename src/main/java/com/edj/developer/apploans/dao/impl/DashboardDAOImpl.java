@@ -83,7 +83,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getTotalUniqueCustomersCount() {
-        String sql = "SELECT COUNT(DISTINCT customer_id) FROM loans";
+        String sql = "SELECT COUNT(*) FROM customers"; // Muestra los 147 reales
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -94,7 +94,13 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getWeeklyPendingInstallmentsCount() {
-        String sql = "SELECT COUNT(*) FROM loan_payments WHERE status != 'PAID' AND date(due_date) BETWEEN date('now','localtime') AND date('now', '+7 days')";
+        String sql = """
+        SELECT COUNT(*) 
+        FROM loan_payments 
+        WHERE status != 'PAID' 
+          AND date(due_date) BETWEEN date('now', 'localtime', 'weekday 0', '-6 days') 
+                                 AND date('now', 'localtime', 'weekday 0')
+    """;
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -105,7 +111,13 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public double getWeeklyPendingAmountTotal() {
-        String sql = "SELECT SUM(amount - paid_amount) FROM loan_payments WHERE status != 'PAID' AND date(due_date) BETWEEN date('now','localtime') AND date('now', '+7 days')";
+        String sql = """
+        SELECT SUM(amount - paid_amount) 
+        FROM loan_payments 
+        WHERE status != 'PAID' 
+          AND date(due_date) BETWEEN date('now', 'localtime', 'weekday 0', '-6 days') 
+                                 AND date('now', 'localtime', 'weekday 0')
+    """;
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

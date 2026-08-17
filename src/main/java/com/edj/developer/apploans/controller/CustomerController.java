@@ -301,8 +301,8 @@ public class CustomerController implements Initializable {
     private void refreshStats() {
         try {
             lblTotalCustomers.setText(String.valueOf(customerDAO.countAll()));
-            lblActiveCustomers.setText(String.valueOf(customerDAO.countByStatus("ACTIVE")));
-            lblInactiveCustomers.setText(String.valueOf(customerDAO.countByStatus("INACTIVE")));
+            lblActiveCustomers.setText(String.valueOf(customerDAO.countByStatus("ACTIVO")));
+            lblInactiveCustomers.setText(String.valueOf(customerDAO.countByStatus("INACTIVO")));
             lblWithLoans.setText(String.valueOf(customerDAO.countWithActiveLoans()));
         } catch (Exception e) {
             log.warn("No se pudieron actualizar las estadísticas: {}", e.getMessage());
