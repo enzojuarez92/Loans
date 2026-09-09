@@ -18,15 +18,17 @@ public class ReportDAOImpl implements ReportDAO {
     public List<DailyReportItem> getDailyDueInstallments() {
         List<DailyReportItem> list = new ArrayList<>();
         String sql = """
-            SELECT lp.loan_id, (c.first_name || ' ' || c.last_name) AS customer, 
-                   lp.installment_number, lp.amount, lp.due_date
-            FROM loan_payments lp
-            JOIN loans l ON lp.loan_id = l.id
-            JOIN customers c ON l.customer_id = c.id
-            WHERE date(lp.due_date) = date('now', 'localtime')
-              AND lp.status != 'PAID'
-            ORDER BY customer ASC
-            """;
+        SELECT lp.loan_id, (c.first_name || ' ' || c.last_name) AS customer, 
+               lp.installment_number, lp.amount, lp.due_date
+        FROM loan_payments lp
+        JOIN loans l ON lp.loan_id = l.id
+        JOIN customers c ON l.customer_id = c.id
+        WHERE date(lp.due_date) = date('now', 'localtime')
+          AND lp.status != 'PAID'
+          AND lp.status != 'CANCELED'
+          AND UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO') -- 🚀 Filtra SOLO préstamos vigentes/activos
+        ORDER BY customer ASC
+        """;
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
