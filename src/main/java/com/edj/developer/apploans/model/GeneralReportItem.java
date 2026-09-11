@@ -3,15 +3,19 @@ package com.edj.developer.apploans.model;
 public class GeneralReportItem {
     private final String customerName;
     private final int loanId;
-    private final double installmentAmount;
+    private final double outstandingBalance;
 
-    public GeneralReportItem(String customerName, int loanId, double installmentAmount) {
+    public GeneralReportItem(String customerName, int loanId, double outstandingBalance) {
         this.customerName = customerName;
         this.loanId = loanId;
-        this.installmentAmount = installmentAmount;
+        this.outstandingBalance = outstandingBalance;
     }
 
     public String getCustomerName() { return customerName; }
     public int getLoanId() { return loanId; }
-    public double getInstallmentAmount() { return installmentAmount; }
+    public double getOutstandingBalance() { return outstandingBalance; }
+
+    /** @deprecated El informe general ahora comunica saldo pendiente, no cuota. */
+    @Deprecated
+    public double getInstallmentAmount() { return outstandingBalance; }
 }

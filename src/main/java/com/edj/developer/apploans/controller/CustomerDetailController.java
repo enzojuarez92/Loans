@@ -77,8 +77,7 @@ public class CustomerDetailController {
             }
         });
 
-        // Mostramos el saldo restante del préstamo (guardado temporalmente en interestRate en tu query)
-        colLoanRemaining.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getInterestRate()));
+        colLoanRemaining.setCellValueFactory(cell -> new SimpleObjectProperty<>(cell.getValue().getRemainingBalance()));
         colLoanRemaining.setCellFactory(col -> new TableCell<>() {
             @Override
             protected void updateItem(Double remaining, boolean empty) {

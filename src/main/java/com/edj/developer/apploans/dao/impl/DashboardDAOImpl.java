@@ -6,13 +6,21 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public double getTotalOutstandingCapital() {
-        String sql = "SELECT SUM(amount) FROM loans WHERE UPPER(TRIM(status)) != 'CANCELED'";
+        String sql = """
+            SELECT COALESCE(SUM(MAX(lp.amount - lp.paid_amount, 0)), 0)
+            FROM loan_payments lp
+            JOIN loans l ON l.id = lp.loan_id
+            WHERE UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO')
+              AND UPPER(TRIM(lp.status)) != 'CANCELED'
+            """;
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -23,7 +31,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public double getTotalRecoveredCapital() {
-        String sql = "SELECT SUM(paid_amount) FROM loan_payments";
+        String sql = "SELECT COALESCE(SUM(paid_amount), 0) FROM loan_payments";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -34,7 +42,7 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getActiveLoansCount() {
-        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(TRIM(status)) = 'ACTIVE'";
+        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(TRIM(status)) IN ('ACTIVE', 'ACTIVO')";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -48,7 +56,9 @@ public class DashboardDAOImpl implements DashboardDAO {
         String sql = "SELECT COUNT(DISTINCT l.customer_id) " +
                 "FROM loan_payments lp " +
                 "JOIN loans l ON lp.loan_id = l.id " +
-                "WHERE lp.status != 'PAID' AND date(lp.due_date) < date('now','localtime') AND UPPER(TRIM(l.status)) = 'ACTIVE'";
+                "WHERE UPPER(TRIM(lp.status)) NOT IN ('PAID', 'CANCELED', 'CANCELADO') " +
+                "AND date(lp.due_date) < date('now','localtime') " +
+                "AND UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO')";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -70,10 +80,17 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getLoansCountByStatus(String status) {
-        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(TRIM(status)) = ?";
+        String normalized = status.trim().toUpperCase();
+        String sql = "SELECT COUNT(*) FROM loans WHERE UPPER(TRIM(status)) IN (?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, status.trim().toUpperCase());
+            ps.setString(1, normalized);
+            ps.setString(2, switch (normalized) {
+                case "ACTIVE" -> "ACTIVO";
+                case "CANCELED" -> "CANCELADO";
+                case "COMPLETED" -> "COMPLETADO";
+                default -> normalized;
+            });
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -95,9 +112,11 @@ public class DashboardDAOImpl implements DashboardDAO {
     @Override
     public int getWeeklyPendingInstallmentsCount() {
         String sql = """
-        SELECT COUNT(*) 
-        FROM loan_payments 
-        WHERE status != 'PAID' 
+        SELECT COUNT(*)
+        FROM loan_payments lp
+        JOIN loans l ON l.id = lp.loan_id
+        WHERE lp.status NOT IN ('PAID', 'CANCELED')
+          AND UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO')
           AND date(due_date) BETWEEN date('now', 'localtime', 'weekday 0', '-6 days') 
                                  AND date('now', 'localtime', 'weekday 0')
     """;
@@ -112,9 +131,11 @@ public class DashboardDAOImpl implements DashboardDAO {
     @Override
     public double getWeeklyPendingAmountTotal() {
         String sql = """
-        SELECT SUM(amount - paid_amount) 
-        FROM loan_payments 
-        WHERE status != 'PAID' 
+        SELECT COALESCE(SUM(MAX(lp.amount - lp.paid_amount, 0)), 0)
+        FROM loan_payments lp
+        JOIN loans l ON l.id = lp.loan_id
+        WHERE lp.status NOT IN ('PAID', 'CANCELED')
+          AND UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO')
           AND date(due_date) BETWEEN date('now', 'localtime', 'weekday 0', '-6 days') 
                                  AND date('now', 'localtime', 'weekday 0')
     """;
@@ -133,8 +154,9 @@ public class DashboardDAOImpl implements DashboardDAO {
         data.put("Jue", 0.0); data.put("Vie", 0.0); data.put("Sab", 0.0); data.put("Dom", 0.0);
 
         String sql = "SELECT strftime('%w', payment_date) as dia_num, SUM(paid_amount) " +
-                "FROM loan_payments " +
-                "WHERE payment_date IS NOT NULL AND date(payment_date) >= date('now', '-7 days') " +
+                "FROM loan_payments lp JOIN loans l ON l.id = lp.loan_id " +
+                "WHERE payment_date IS NOT NULL AND date(payment_date) >= date('now', 'localtime', '-6 days') " +
+                "AND UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO') " +
                 "GROUP BY dia_num";
 
         try (Connection conn = DatabaseConfig.getConnection();
@@ -157,23 +179,17 @@ public class DashboardDAOImpl implements DashboardDAO {
     @Override
     public Map<String, Double> getMonthlyLoanCollections() {
         Map<String, Double> data = new LinkedHashMap<>();
-        String sql = "SELECT strftime('%m', payment_date) as mes, SUM(paid_amount) " +
+        String sql = "SELECT strftime('%Y-%m', payment_date) as period, SUM(paid_amount) " +
                 "FROM loan_payments WHERE payment_date IS NOT NULL " +
-                "GROUP BY mes ORDER BY mes ASC LIMIT 6";
+                "GROUP BY period ORDER BY period DESC LIMIT 6";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
+            List<String[]> rows = new ArrayList<>();
             while (rs.next()) {
-                String mes = rs.getString(1);
-                double total = rs.getDouble(2);
-                String mesNombre = switch (mes) {
-                    case "01" -> "Ene"; case "02" -> "Feb"; case "03" -> "Mar";
-                    case "04" -> "Abr"; case "05" -> "May"; case "06" -> "Jun";
-                    case "07" -> "Jul"; case "08" -> "Ago"; case "09" -> "Sep";
-                    case "10" -> "Oct"; case "11" -> "Nov"; default -> "Dic";
-                };
-                data.put(mesNombre, total);
+                rows.add(new String[]{rs.getString(1), rs.getString(2)});
             }
+            for (int i = rows.size() - 1; i >= 0; i--) data.put(formatPeriod(rows.get(i)[0]), Double.parseDouble(rows.get(i)[1]));
         } catch (Exception e) { e.printStackTrace(); }
         return data;
     }
@@ -191,10 +207,17 @@ public class DashboardDAOImpl implements DashboardDAO {
 
     @Override
     public int getSalesCountByStatus(String status) {
-        String sql = "SELECT COUNT(*) FROM sales WHERE UPPER(TRIM(status)) = ?";
+        String normalized = status.trim().toUpperCase();
+        String sql = "SELECT COUNT(*) FROM sales WHERE UPPER(TRIM(status)) IN (?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, status.trim().toUpperCase());
+            ps.setString(1, normalized);
+            ps.setString(2, switch (normalized) {
+                case "ACTIVE" -> "ACTIVO";
+                case "CANCELED" -> "CANCELADO";
+                case "COMPLETED" -> "COMPLETADO";
+                default -> normalized;
+            });
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return rs.getInt(1);
             }
@@ -205,24 +228,29 @@ public class DashboardDAOImpl implements DashboardDAO {
     @Override
     public Map<String, Double> getMonthlySalesRevenue() {
         Map<String, Double> data = new LinkedHashMap<>();
-        data.put("Ene", 0.0); data.put("Feb", 0.0); data.put("Mar", 0.0);
-        data.put("Abr", 0.0); data.put("May", 0.0); data.put("Jun", 0.0);
-
-        String sql = "SELECT strftime('%m', payment_date) as mes, SUM(paid_amount) " +
-                "FROM sales_payments WHERE payment_date IS NOT NULL GROUP BY mes ORDER BY mes ASC LIMIT 6";
+        String sql = "SELECT strftime('%Y-%m', paid_at) as period, SUM(paid_amount) " +
+                "FROM sales_payments WHERE paid_at IS NOT NULL " +
+                "GROUP BY period ORDER BY period DESC LIMIT 6";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
+            List<String[]> rows = new ArrayList<>();
             while (rs.next()) {
-                String mes = rs.getString(1);
-                double total = rs.getDouble(2);
-                String label = switch (mes) {
-                    case "01" -> "Ene"; case "02" -> "Feb"; case "03" -> "Mar";
-                    case "04" -> "Abr"; case "05" -> "May"; default -> "Jun";
-                };
-                data.put(label, total);
+                rows.add(new String[]{rs.getString(1), rs.getString(2)});
             }
+            for (int i = rows.size() - 1; i >= 0; i--) data.put(formatPeriod(rows.get(i)[0]), Double.parseDouble(rows.get(i)[1]));
         } catch (Exception e) { e.printStackTrace(); }
         return data;
+    }
+
+    private String formatPeriod(String period) {
+        if (period == null || period.length() != 7) return period;
+        String month = switch (period.substring(5)) {
+            case "01" -> "Ene"; case "02" -> "Feb"; case "03" -> "Mar";
+            case "04" -> "Abr"; case "05" -> "May"; case "06" -> "Jun";
+            case "07" -> "Jul"; case "08" -> "Ago"; case "09" -> "Sep";
+            case "10" -> "Oct"; case "11" -> "Nov"; default -> "Dic";
+        };
+        return month + "/" + period.substring(2, 4);
     }
 }

@@ -117,13 +117,6 @@ public class DashboardController {
         XYChart.Series<String, Number> series = new XYChart.Series<>();
         Map<String, Double> weeklyData = dashboardDAO.getWeeklyCollectionsByDay();
 
-        boolean hasData = weeklyData.values().stream().anyMatch(val -> val > 0);
-        if (!hasData) {
-            weeklyData.put("Lun", 15000.0); weeklyData.put("Mar", 24000.0); weeklyData.put("Mie", 12000.0);
-            weeklyData.put("Jue", 45000.0); weeklyData.put("Vie", 32000.0); weeklyData.put("Sab", 18000.0);
-            weeklyData.put("Dom", 0.0);
-        }
-
         weeklyData.forEach((day, total) -> series.getData().add(new XYChart.Data<>(day, total)));
         chartWeeklyPayments.getData().add(series);
     }
@@ -132,8 +125,6 @@ public class DashboardController {
         int active = Integer.parseInt(lblActiveLoansCount.getText());
         int completed = Integer.parseInt(lblCompletedLoansCount.getText());
         int canceled = Integer.parseInt(lblCanceledLoansCount.getText());
-
-        if (active == 0 && completed == 0 && canceled == 0) { active = 1; completed = 1; }
 
         ObservableList<PieChart.Data> data = FXCollections.observableArrayList(
                 new PieChart.Data("Activos", active),
@@ -153,9 +144,6 @@ public class DashboardController {
         int completed = Integer.parseInt(lblCompletedSalesCount.getText());
         int canceled = lblCanceledSalesCount != null ? Integer.parseInt(lblCanceledSalesCount.getText()) : 0;
 
-        if (active == 0 && completed == 0 && canceled == 0) { active = 1; completed = 2; }
-
-        // 🚀 Ahora se renderiza el tercer estado en la torta de Ventas
         ObservableList<PieChart.Data> data = FXCollections.observableArrayList(
                 new PieChart.Data("Activas", active),
                 new PieChart.Data("Finalizadas", completed),
@@ -177,12 +165,6 @@ public class DashboardController {
 
         // 🚀 Consumimos el mapa directamente desde el DAO
         Map<String, Double> monthlyMap = dashboardDAO.getMonthlySalesRevenue();
-
-        boolean hasData = monthlyMap.values().stream().anyMatch(v -> v > 0);
-        if (!hasData) {
-            monthlyMap.put("Ene", 85000.0); monthlyMap.put("Feb", 110000.0); monthlyMap.put("Mar", 95000.0);
-            monthlyMap.put("Abr", 140000.0); monthlyMap.put("May", 165000.0); monthlyMap.put("Jun", 130000.0);
-        }
 
         monthlyMap.forEach((month, total) -> series.getData().add(new XYChart.Data<>(month, total)));
         chartMonthlySales.getData().add(series);

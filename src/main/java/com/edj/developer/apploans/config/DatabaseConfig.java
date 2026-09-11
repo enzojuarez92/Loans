@@ -2,12 +2,14 @@ package com.edj.developer.apploans.config;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.edj.developer.apploans.util.PasswordHasher;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.ResultSet;
 
 /**
  * DatabaseConfig
@@ -62,6 +64,7 @@ public final class DatabaseConfig {
     public static void initDatabase() {
         log.info("Initializing database...");
         createTables();
+        migrateExistingDatabaseSafely();
         seedAdminUser();
         seedDefaultConfig();
         log.info("Database ready at: {}", DB_URL);
@@ -91,12 +94,51 @@ public final class DatabaseConfig {
             stmt.execute(DatabaseTables.CREATE_SALES_TABLE);
             stmt.execute(DatabaseTables.CREATE_SALES_PAYMENTS_TABLE);
             stmt.execute(DatabaseTables.CREATE_PAYMENTS_HISTORY_TABLE);
+            stmt.execute(DatabaseTables.CREATE_PAYMENT_ALLOCATIONS_TABLE);
 
             log.info("Tables verified/created successfully.");
         } catch (SQLException e) {
             log.error("Error creating tables", e);
             throw new RuntimeException("Could not initialize database schema.", e);
         }
+    }
+
+    /**
+     * Migraciones compatibles con instalaciones ya productivas.
+     *
+     * No se modifican importes, cuotas, estados ni recibos existentes. Si una
+     * base anterior usaba sales_payments.payment_date, se agrega paid_at y se
+     * copia únicamente esa fecha para que los reportes puedan leerla.
+     */
+    private static void migrateExistingDatabaseSafely() {
+        try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
+            boolean hasPaidAt = hasColumn(conn, "sales_payments", "paid_at");
+            boolean hasPaymentDate = hasColumn(conn, "sales_payments", "payment_date");
+
+            if (!hasPaidAt) {
+                stmt.execute("ALTER TABLE sales_payments ADD COLUMN paid_at TEXT");
+                log.info("Migración: agregada columna sales_payments.paid_at.");
+            }
+            if (hasPaymentDate) {
+                stmt.executeUpdate("""
+                    UPDATE sales_payments
+                    SET paid_at = payment_date
+                    WHERE paid_at IS NULL AND payment_date IS NOT NULL
+                    """);
+                log.info("Migración: se conservaron fechas históricas de pagos de ventas.");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("No se pudo verificar la compatibilidad de la base de datos.", e);
+        }
+    }
+
+    private static boolean hasColumn(Connection conn, String table, String column) throws SQLException {
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + table + ")")) {
+            while (rs.next()) {
+                if (column.equalsIgnoreCase(rs.getString("name"))) return true;
+            }
+        }
+        return false;
     }
 
     /** Inserta el usuario admin si no existe (INSERT OR IGNORE) */
@@ -110,7 +152,7 @@ public final class DatabaseConfig {
              var ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, ADMIN_USERNAME);
-            ps.setString(2, ADMIN_PASSWORD);
+            ps.setString(2, PasswordHasher.hash(ADMIN_PASSWORD));
             int rows = ps.executeUpdate();
 
             if (rows > 0) log.info("Admin user seeded successfully.");

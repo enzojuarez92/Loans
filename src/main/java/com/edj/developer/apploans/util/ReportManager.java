@@ -31,7 +31,7 @@ public class ReportManager {
                     GeneralReportItem general = (GeneralReportItem) item;
                     map.put("id", general.getLoanId());
                     map.put("name", general.getCustomerName());
-                    map.put("value", general.getInstallmentAmount());
+                    map.put("value", general.getOutstandingBalance());
                 }
                 mappedData.add(map);
             }

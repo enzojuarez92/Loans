@@ -1,6 +1,7 @@
 package com.edj.developer.apploans.controller;
 
 import com.edj.developer.apploans.config.DatabaseConfig;
+import com.edj.developer.apploans.util.PasswordHasher;
 import com.edj.developer.apploans.dao.IConfigDAO;
 import com.edj.developer.apploans.dao.impl.ConfigDAOImpl;
 import com.edj.developer.apploans.model.LoanAmount;
@@ -316,7 +317,7 @@ public class SettingController implements Initializable {
                 // 2. Guardar en tabla users
                 psUser.setString(1, fullName);
                 if (updatePass) {
-                    psUser.setString(2, newPass);
+                    psUser.setString(2, PasswordHasher.hash(newPass));
                 }
                 psUser.executeUpdate();
 

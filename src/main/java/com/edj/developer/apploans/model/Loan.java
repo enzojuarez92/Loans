@@ -12,6 +12,8 @@ public class Loan {
     private String customerEmail;
     private double amount;
     private double interestRate;
+    // Solo para vistas de resumen; evita reutilizar interestRate con otro significado.
+    private double remainingBalance;
     private double totalAmount;
     private int installments;
     private String frequency;
@@ -72,6 +74,9 @@ public class Loan {
     public void setInterestRate(double interestRate) {
         this.interestRate = interestRate;
     }
+
+    public double getRemainingBalance() { return remainingBalance; }
+    public void setRemainingBalance(double remainingBalance) { this.remainingBalance = remainingBalance; }
 
     public double getTotalAmount() {
         return totalAmount;

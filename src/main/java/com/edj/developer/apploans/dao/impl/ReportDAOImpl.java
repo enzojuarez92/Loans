@@ -25,7 +25,7 @@ public class ReportDAOImpl implements ReportDAO {
         JOIN customers c ON l.customer_id = c.id
         WHERE date(lp.due_date) = date('now', 'localtime')
           AND lp.status != 'PAID'
-          AND lp.status != 'CANCELED'
+          AND UPPER(TRIM(lp.status)) NOT IN ('CANCELED', 'CANCELADO')
           AND UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO') -- 🚀 Filtra SOLO préstamos vigentes/activos
         ORDER BY customer ASC
         """;
@@ -49,17 +49,16 @@ public class ReportDAOImpl implements ReportDAO {
     @Override
     public List<GeneralReportItem> getActiveLoansInstallments() {
         List<GeneralReportItem> list = new ArrayList<>();
-        // 🌟 CORREGIDO: Agrupamos correctamente por préstamo y calculamos el total pendiente real
         String sql = """
         SELECT 
             (c.first_name || ' ' || c.last_name) AS customer, 
             l.id AS loan_id, 
-            MAX(lp.amount) AS valor_cuota
+            COALESCE(SUM(MAX(lp.amount - lp.paid_amount, 0)), 0) AS saldo_pendiente
         FROM loans l
         JOIN customers c ON l.customer_id = c.id
         JOIN loan_payments lp ON lp.loan_id = l.id
-        WHERE l.status = 'ACTIVE'
-          AND lp.status != 'PAID'
+        WHERE UPPER(TRIM(l.status)) IN ('ACTIVE', 'ACTIVO')
+          AND UPPER(TRIM(lp.status)) NOT IN ('PAID', 'CANCELED')
         GROUP BY l.id, c.first_name, c.last_name
         ORDER BY customer ASC
         """;
@@ -71,7 +70,7 @@ public class ReportDAOImpl implements ReportDAO {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
                         rs.getInt("loan_id"),
-                        rs.getDouble("valor_cuota") // 💡 Pasamos el saldo pendiente total del préstamo activo
+                        rs.getDouble("saldo_pendiente")
                 ));
             }
         } catch (SQLException e) { e.printStackTrace(); }
@@ -89,8 +88,8 @@ public class ReportDAOImpl implements ReportDAO {
             JOIN sales s ON sp.sale_id = s.id
             JOIN customers c ON s.customer_id = c.id
             WHERE date(sp.due_date) = date('now', 'localtime')
-              AND sp.status != 'PAID'
-              AND s.status != 'CANCELED'  -- 🚀 Excluye cuotas de ventas anuladas
+              AND UPPER(TRIM(sp.status)) NOT IN ('PAID', 'CANCELED', 'CANCELADO')
+              AND UPPER(TRIM(s.status)) NOT IN ('CANCELED', 'CANCELADO')
             ORDER BY customer ASC
             """;
 
@@ -110,19 +109,18 @@ public class ReportDAOImpl implements ReportDAO {
         return list;
     }
 
-    // 💡 VERIFICADO: Planilla General de Ventas Activas (Solo estado ACTIVE)
     @Override
     public List<GeneralReportItem> getActiveSalesInstallments() {
         List<GeneralReportItem> list = new ArrayList<>();
         String sql = """
             SELECT (c.first_name || ' ' || c.last_name) AS customer, 
             s.id AS sale_id, 
-            MAX(sp.amount) AS valor_cuota
+            COALESCE(SUM(MAX(sp.amount - sp.paid_amount, 0)), 0) AS saldo_pendiente
             FROM sales s
             JOIN customers c ON s.customer_id = c.id
             JOIN sales_payments sp ON sp.sale_id = s.id
-            WHERE s.status = 'ACTIVE'
-              AND sp.status != 'PAID'
+            WHERE UPPER(TRIM(s.status)) IN ('ACTIVE', 'ACTIVO')
+              AND UPPER(TRIM(sp.status)) NOT IN ('PAID', 'CANCELED')
             GROUP BY s.id
             ORDER BY customer ASC
             """;
@@ -134,7 +132,7 @@ public class ReportDAOImpl implements ReportDAO {
                 list.add(new GeneralReportItem(
                         rs.getString("customer"),
                         rs.getInt("sale_id"),
-                        rs.getDouble("valor_cuota")
+                        rs.getDouble("saldo_pendiente")
                 ));
             }
         } catch (SQLException e) { e.printStackTrace(); }

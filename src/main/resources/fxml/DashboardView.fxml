@@ -21,11 +21,11 @@
 
         <HBox spacing="20">
             <VBox styleClass="stat-card,stat-card-primary" HBox.hgrow="ALWAYS">
-                <Label text="CAPITAL EN LA CALLE" styleClass="stat-label"/>
+                <Label text="SALDO PENDIENTE EN PRÉSTAMOS" styleClass="stat-label"/>
                 <Label fx:id="lblTotalOut" text="0.00" styleClass="stat-value"/>
             </VBox>
             <VBox styleClass="stat-card,stat-card-success" HBox.hgrow="ALWAYS">
-                <Label text="TOTAL RECUPERADO" styleClass="stat-label"/>
+                <Label text="COBROS REGISTRADOS" styleClass="stat-label"/>
                 <Label fx:id="lblTotalIn" text="0.00" styleClass="stat-value"/>
             </VBox>
             <VBox styleClass="stat-card,stat-card-info" HBox.hgrow="ALWAYS">

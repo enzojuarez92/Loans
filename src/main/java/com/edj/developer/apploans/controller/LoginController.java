@@ -3,6 +3,7 @@ package com.edj.developer.apploans.controller;
 import com.edj.developer.apploans.config.DatabaseConfig;
 import com.edj.developer.apploans.model.User;
 import com.edj.developer.apploans.util.SessionManager;
+import com.edj.developer.apploans.util.PasswordHasher;
 import javafx.animation.FadeTransition;
 import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
@@ -32,13 +33,13 @@ import java.util.ResourceBundle;
  *
  * Flujo de autenticación:
  *  1. Validar campos no vacíos (inline)
- *  2. Consultar tabla `users` con username + password
+ *  2. Consultar el usuario y verificar su contraseña protegida
  *  3. Verificar que user.active = 1
  *  4. Guardar usuario en SessionManager (Singleton)
  *  5. Cargar MainView.fxml y reemplazar la escena
  *
  * Seguridad:
- *  - En producción, reemplazar comparación directa por BCrypt.verify()
+ *  - Las contraseñas nuevas se almacenan con PBKDF2
  *  - PreparedStatement previene SQL Injection
  *  - Intentos fallidos se loguean con SLF4J
  */
@@ -47,9 +48,9 @@ public class LoginController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(LoginController.class);
 
     private static final String SQL_LOGIN = """
-        SELECT id, username, full_name, role, active
+        SELECT id, username, password, full_name, role, active
         FROM users
-        WHERE username = ? AND password = ? AND active = 1
+        WHERE username = ? AND active = 1
         LIMIT 1
         """;
 
@@ -134,17 +135,16 @@ public class LoginController implements Initializable {
      * Consulta la BD y retorna el User si las credenciales son válidas.
      * Retorna null si no existe o está inactivo.
      *
-     * NOTA: En producción usar BCrypt.checkpw(password, storedHash)
+     * Las claves históricas en texto plano se aceptan una única vez y se
+     * actualizan a PBKDF2 al iniciar sesión correctamente.
      */
     private User authenticate(String username, String password) {
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(SQL_LOGIN)) {
 
             ps.setString(1, username);
-            ps.setString(2, password); // TODO: reemplazar con BCrypt en producción
-
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
+                if (rs.next() && verifyPassword(conn, rs, password)) {
                     User user = new User();
                     user.setId(rs.getInt("id"));
                     user.setUsername(rs.getString("username"));
@@ -160,6 +160,23 @@ public class LoginController implements Initializable {
         }
 
         return null;
+    }
+
+    private boolean verifyPassword(Connection conn, ResultSet rs, String password) throws SQLException {
+        String storedPassword = rs.getString("password");
+        if (PasswordHasher.matches(password, storedPassword)) return true;
+
+        if (PasswordHasher.isLegacyPlainText(storedPassword) && storedPassword.equals(password)) {
+            try (PreparedStatement update = conn.prepareStatement("UPDATE users SET password = ? WHERE id = ? AND password = ?")) {
+                update.setString(1, PasswordHasher.hash(password));
+                update.setInt(2, rs.getInt("id"));
+                update.setString(3, storedPassword);
+                update.executeUpdate();
+            }
+            log.info("Contraseña histórica protegida para el usuario '{}'.", rs.getString("username"));
+            return true;
+        }
+        return false;
     }
 
     /* ═══════════════════════════════════════════════════════════════════

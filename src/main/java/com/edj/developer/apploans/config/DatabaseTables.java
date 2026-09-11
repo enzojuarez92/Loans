@@ -149,5 +149,27 @@ public final class DatabaseTables {
     )
     """;
 
+    /**
+     * Detalle inmutable de cómo se distribuye un recibo entre cuotas.  Las bases
+     * anteriores no lo poseen; se crea vacía y solo se completa para cobros
+     * nuevos, por lo que no modifica ningún historial existente.
+     */
+    public static final String CREATE_PAYMENT_ALLOCATIONS_TABLE = """
+    CREATE TABLE IF NOT EXISTS payment_allocations (
+        id              INTEGER PRIMARY KEY AUTOINCREMENT,
+        receipt_id      INTEGER NOT NULL,
+        loan_payment_id INTEGER,
+        sale_payment_id INTEGER,
+        amount          REAL NOT NULL CHECK(amount > 0),
+        FOREIGN KEY(receipt_id) REFERENCES payment_history(id) ON DELETE CASCADE,
+        FOREIGN KEY(loan_payment_id) REFERENCES loan_payments(id),
+        FOREIGN KEY(sale_payment_id) REFERENCES sales_payments(id),
+        CHECK (
+            (loan_payment_id IS NOT NULL AND sale_payment_id IS NULL) OR
+            (loan_payment_id IS NULL AND sale_payment_id IS NOT NULL)
+        )
+    )
+    """;
+
 
 }

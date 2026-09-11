@@ -186,8 +186,13 @@ public class SaleDAOImpl implements SaleDAO {
         WHERE 1=1
         """);
 
+        boolean isNumeric = search != null && search.trim().matches("\\d+");
         if (search != null && !search.trim().isEmpty()) {
-            sql.append(" AND ((c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
+            if (isNumeric) {
+                sql.append(" AND (s.id = ? OR (c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
+            } else {
+                sql.append(" AND ((c.first_name || ' ' || c.last_name) LIKE ? OR p.name LIKE ?)");
+            }
         }
         if (statusFilter != null && !statusFilter.isEmpty() && !"TODOS".equals(statusFilter)) {
             sql.append(" AND s.status = ?");
@@ -198,6 +203,7 @@ public class SaleDAOImpl implements SaleDAO {
             int idx = 1;
             if (search != null && !search.trim().isEmpty()) {
                 String filter = "%" + search.trim() + "%";
+                if (isNumeric) ps.setInt(idx++, Integer.parseInt(search.trim()));
                 ps.setString(idx++, filter);
                 ps.setString(idx++, filter);
             }
@@ -306,12 +312,22 @@ public class SaleDAOImpl implements SaleDAO {
 
     @Override
     public boolean updateSalePaymentStatus(int paymentId, String status, double paidAmount) {
-        String sql = "UPDATE sales_payments SET status = ?, paid_amount = ? WHERE id = ?";
+        String sql = """
+            UPDATE sales_payments
+            SET status = ?,
+                paid_amount = ?,
+                paid_at = CASE
+                    WHEN ? > 0 THEN COALESCE(paid_at, datetime('now', 'localtime'))
+                    ELSE NULL
+                END
+            WHERE id = ?
+            """;
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, status);
             ps.setDouble(2, paidAmount);
-            ps.setInt(3, paymentId);
+            ps.setDouble(3, paidAmount);
+            ps.setInt(4, paymentId);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) { log.error(e.getMessage()); return false; }
     }
@@ -319,27 +335,25 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public boolean processSaleCascadePayment(int saleId, double totalAmount, String notes) {
         String sqlInsertHistory = "INSERT INTO payment_history (sale_id, amount, payment_date, notes) VALUES (?, ?, datetime('now', 'localtime'), ?)";
-        String sqlSelectPayments = "SELECT id, amount, paid_amount FROM sales_payments WHERE sale_id = ? AND status != 'PAID' ORDER BY installment_no ASC";
+        String sqlSelectPayments = "SELECT id, amount, paid_amount FROM sales_payments WHERE sale_id = ? AND status NOT IN ('PAID', 'CANCELED') ORDER BY installment_no ASC";
         String sqlUpdatePayment = "UPDATE sales_payments SET paid_amount = ?, status = ?, paid_at = datetime('now', 'localtime') WHERE id = ?";
-        String sqlCountPending = "SELECT COUNT(*) FROM sales_payments WHERE sale_id = ? AND status != 'PAID'";
+        String sqlCountPending = "SELECT COUNT(*) FROM sales_payments WHERE sale_id = ? AND status NOT IN ('PAID', 'CANCELED')";
         String sqlUpdateSaleStatus = "UPDATE sales SET status = 'COMPLETED' WHERE id = ?";
+        String sqlInsertAllocation = "INSERT INTO payment_allocations (receipt_id, sale_payment_id, amount) VALUES (?, ?, ?)";
 
         class TempCuotaSale {
             int id; double amount; double paidAmount;
             TempCuotaSale(int id, double amount, double paidAmount) { this.id = id; this.amount = amount; this.paidAmount = paidAmount; }
+        }
+        class Allocation {
+            int paymentId; double amount;
+            Allocation(int paymentId, double amount) { this.paymentId = paymentId; this.amount = amount; }
         }
 
         Connection conn = null;
         try {
             conn = DatabaseConfig.getConnection();
             conn.setAutoCommit(false);
-
-            try (PreparedStatement ps = conn.prepareStatement(sqlInsertHistory)) {
-                ps.setInt(1, saleId);
-                ps.setDouble(2, totalAmount);
-                ps.setString(3, (notes == null || notes.trim().isEmpty()) ? "Entrega de cuota comercial" : notes.trim());
-                ps.executeUpdate();
-            }
 
             List<TempCuotaSale> list = new ArrayList<>();
             try (PreparedStatement psSel = conn.prepareStatement(sqlSelectPayments)) {
@@ -351,7 +365,26 @@ public class SaleDAOImpl implements SaleDAO {
                 }
             }
 
+            double saldoPendiente = list.stream().mapToDouble(c -> Math.max(0, c.amount - c.paidAmount)).sum();
+            if (totalAmount <= 0 || list.isEmpty() || totalAmount > saldoPendiente + 0.01) {
+                conn.rollback();
+                return false;
+            }
+
+            int receiptId;
+            try (PreparedStatement ps = conn.prepareStatement(sqlInsertHistory, Statement.RETURN_GENERATED_KEYS)) {
+                ps.setInt(1, saleId);
+                ps.setDouble(2, totalAmount);
+                ps.setString(3, (notes == null || notes.trim().isEmpty()) ? "Entrega de cuota comercial" : notes.trim());
+                ps.executeUpdate();
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (!keys.next()) throw new SQLException("No se pudo obtener el recibo de venta generado.");
+                    receiptId = keys.getInt(1);
+                }
+            }
+
             double remaining = totalAmount;
+            List<Allocation> allocations = new ArrayList<>();
             try (PreparedStatement psUp = conn.prepareStatement(sqlUpdatePayment)) {
                 for (TempCuotaSale c : list) {
                     if (remaining <= 0) break;
@@ -360,6 +393,7 @@ public class SaleDAOImpl implements SaleDAO {
 
                     // ✅ Agregamos tolerancia de 0.01 centavos para evitar imprecisión de 'double'
                     if ((remaining + 0.01) >= debt) {
+                        allocations.add(new Allocation(c.id, debt));
                         remaining -= debt;
                         if (remaining < 0) remaining = 0; // Prevenimos remanente negativo por la tolerancia
 
@@ -367,6 +401,7 @@ public class SaleDAOImpl implements SaleDAO {
                         psUp.setString(2, "PAID");
                         psUp.setInt(3, c.id);
                     } else {
+                        allocations.add(new Allocation(c.id, remaining));
                         psUp.setDouble(1, c.paidAmount + remaining);
                         psUp.setString(2, "PARTIAL");
                         psUp.setInt(3, c.id);
@@ -375,6 +410,16 @@ public class SaleDAOImpl implements SaleDAO {
                     psUp.addBatch();
                 }
                 if (!list.isEmpty()) psUp.executeBatch();
+            }
+
+            try (PreparedStatement psAllocation = conn.prepareStatement(sqlInsertAllocation)) {
+                for (Allocation allocation : allocations) {
+                    psAllocation.setInt(1, receiptId);
+                    psAllocation.setInt(2, allocation.paymentId);
+                    psAllocation.setDouble(3, allocation.amount);
+                    psAllocation.addBatch();
+                }
+                if (!allocations.isEmpty()) psAllocation.executeBatch();
             }
 
             int pending = 0;
@@ -400,7 +445,33 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public boolean revertLastSalePayment(int receiptId, int saleId, double amount) {
         String sqlDeleteReceipt = "DELETE FROM payment_history WHERE id = ?";
-        String sqlUpdateSale = "UPDATE sales SET status = 'ACTIVE' WHERE id = ?";
+        String sqlUpdateSale = "UPDATE sales SET status = 'ACTIVE' WHERE id = ? AND status = 'COMPLETED'";
+        String sqlSelectAllocations = """
+            SELECT sp.id, sp.paid_amount, pa.amount
+            FROM payment_allocations pa
+            JOIN sales_payments sp ON sp.id = pa.sale_payment_id
+            WHERE pa.receipt_id = ?
+            """;
+        String sqlUpdateAllocationPayment = """
+            UPDATE sales_payments
+            SET paid_amount = ?,
+                status = CASE
+                    WHEN ? >= amount THEN 'PAID'
+                    WHEN ? > 0 THEN 'PARTIAL'
+                    WHEN date(due_date) < date('now', 'localtime') THEN 'OVERDUE'
+                    ELSE 'PENDING'
+                END,
+                paid_at = CASE WHEN ? > 0 THEN paid_at ELSE NULL END
+            WHERE id = ?
+            """;
+        String sqlDeleteAllocations = "DELETE FROM payment_allocations WHERE receipt_id = ?";
+
+        class StoredAllocation {
+            int paymentId; double paidAmount; double allocatedAmount;
+            StoredAllocation(int paymentId, double paidAmount, double allocatedAmount) {
+                this.paymentId = paymentId; this.paidAmount = paidAmount; this.allocatedAmount = allocatedAmount;
+            }
+        }
         String sqlSelectPaymentsToRevert = "SELECT id, amount, paid_amount FROM sales_payments WHERE sale_id = ? AND paid_amount > 0 ORDER BY installment_no DESC";
         String sqlUpdatePayment = "UPDATE sales_payments SET paid_amount = ?, status = ?, paid_at = CASE WHEN ? > 0 THEN paid_at ELSE NULL END WHERE id = ?";
 
@@ -413,6 +484,40 @@ public class SaleDAOImpl implements SaleDAO {
         try {
             conn = DatabaseConfig.getConnection();
             conn.setAutoCommit(false);
+
+            List<StoredAllocation> allocations = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(sqlSelectAllocations)) {
+                ps.setInt(1, receiptId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) allocations.add(new StoredAllocation(
+                            rs.getInt("id"), rs.getDouble("paid_amount"), rs.getDouble("amount")));
+                }
+            }
+            if (!allocations.isEmpty()) {
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateAllocationPayment)) {
+                    for (StoredAllocation allocation : allocations) {
+                        double remainingPaid = Math.max(0, allocation.paidAmount - allocation.allocatedAmount);
+                        ps.setDouble(1, remainingPaid);
+                        ps.setDouble(2, remainingPaid);
+                        ps.setDouble(3, remainingPaid);
+                        ps.setDouble(4, remainingPaid);
+                        ps.setInt(5, allocation.paymentId);
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlDeleteAllocations)) {
+                    ps.setInt(1, receiptId); ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlDeleteReceipt)) {
+                    ps.setInt(1, receiptId); ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateSale)) {
+                    ps.setInt(1, saleId); ps.executeUpdate();
+                }
+                conn.commit();
+                return true;
+            }
 
             try (PreparedStatement ps = conn.prepareStatement(sqlDeleteReceipt)) {
                 ps.setInt(1, receiptId); ps.executeUpdate();
@@ -467,7 +572,9 @@ public class SaleDAOImpl implements SaleDAO {
     @Override
     public boolean cancelSaleWithOption(int saleId, int productId, boolean restoreStock) {
         String updateSale = "UPDATE sales SET status = 'CANCELED' WHERE id = ?";
-        String updatePayments = "UPDATE sales_payments SET status = 'CANCELED' WHERE sale_id = ?";
+        // Igual que en préstamos: un cobro ya realizado permanece como PAGADO
+        // en el historial; solamente se anula el saldo todavía pendiente.
+        String updatePayments = "UPDATE sales_payments SET status = 'CANCELED' WHERE sale_id = ? AND paid_amount < amount";
         String restoreStockSql = "UPDATE products SET stock = stock + 1 WHERE id = ?";
 
         Connection conn = null;

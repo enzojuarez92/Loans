@@ -442,7 +442,7 @@ public class LoanDAOImpl implements LoanDAO {
                     loan.setTotalAmount(rs.getDouble("total_amount"));
                     loan.setStatus(rs.getString("status"));
                     loan.setStartDate(rs.getString("start_date"));
-                    loan.setInterestRate(rs.getDouble("restante"));
+                    loan.setRemainingBalance(rs.getDouble("restante"));
                     loans.add(loan);
                 }
             }
@@ -484,7 +484,9 @@ public class LoanDAOImpl implements LoanDAO {
     @Override
     public boolean cancelLoan(int loanId) {
         String sqlUpdateLoan = "UPDATE loans SET status = 'CANCELED' WHERE id = ?";
-        String sqlUpdatePayments = "UPDATE loan_payments SET status = 'CANCELED' WHERE loan_id = ? AND status = 'PENDING'";
+        // Se conservan las cuotas ya saldadas como evidencia del cobro; solo se
+        // anula el saldo que todavía quedaba pendiente.
+        String sqlUpdatePayments = "UPDATE loan_payments SET status = 'CANCELED' WHERE loan_id = ? AND paid_amount < amount";
 
         try (Connection conn = DatabaseConfig.getConnection()) {
             conn.setAutoCommit(false); // Iniciamos transacción por seguridad
@@ -529,6 +531,11 @@ public class LoanDAOImpl implements LoanDAO {
         WHERE id = ?
         """;
 
+        String sqlInsertAllocation = """
+            INSERT INTO payment_allocations (receipt_id, loan_payment_id, amount)
+            VALUES (?, ?, ?)
+            """;
+
         String sqlCountPending = "SELECT COUNT(*) FROM loan_payments WHERE loan_id = ? AND status != 'PAID' AND status != 'CANCELED'";
         String sqlUpdateLoanStatus = "UPDATE loans SET status = 'COMPLETED' WHERE id = ?";
 
@@ -541,21 +548,18 @@ public class LoanDAOImpl implements LoanDAO {
                 this.id = id; this.amount = amount; this.paidAmount = paidAmount;
             }
         }
+        class Allocation {
+            int paymentId; double amount;
+            Allocation(int paymentId, double amount) { this.paymentId = paymentId; this.amount = amount; }
+        }
 
         Connection conn = null;
         try {
             conn = DatabaseConfig.getConnection();
             conn.setAutoCommit(false); // 🔒 Transacción segura
 
-            // 1. Insertar el recibo en el historial de pagos
-            try (PreparedStatement psHist = conn.prepareStatement(sqlInsertHistory)) {
-                psHist.setInt(1, loanId);
-                psHist.setDouble(2, totalAmount);
-                psHist.setString(3, (notes == null || notes.trim().isEmpty()) ? "Cobro en cascada" : notes.trim());
-                psHist.executeUpdate();
-            }
-
-            // 2. LEER LAS CUOTAS EN MEMORIA (Para liberar el driver de SQLite de inmediato)
+            // 1. Leer cuotas antes de emitir un recibo. Así no se genera un
+            // recibo sin impacto ni se acepta un importe mayor al saldo.
             List<TempCuota> cuotasPendientes = new ArrayList<>();
             try (PreparedStatement psSel = conn.prepareStatement(sqlSelectPayments)) {
                 psSel.setInt(1, loanId);
@@ -570,8 +574,28 @@ public class LoanDAOImpl implements LoanDAO {
                 } // El ResultSet y el PreparedStatement se cierran ACÁ automáticamente
             }
 
-            // 3. PROCESAR EL DERRAME EN CASCADA USANDO LA LISTA EN MEMORIA
+            double saldoPendiente = cuotasPendientes.stream()
+                    .mapToDouble(c -> Math.max(0, c.amount - c.paidAmount)).sum();
+            if (totalAmount <= 0 || cuotasPendientes.isEmpty() || totalAmount > saldoPendiente + 0.01) {
+                conn.rollback();
+                return false;
+            }
+
+            int receiptId;
+            try (PreparedStatement psHist = conn.prepareStatement(sqlInsertHistory, Statement.RETURN_GENERATED_KEYS)) {
+                psHist.setInt(1, loanId);
+                psHist.setDouble(2, totalAmount);
+                psHist.setString(3, (notes == null || notes.trim().isEmpty()) ? "Cobro en cascada" : notes.trim());
+                psHist.executeUpdate();
+                try (ResultSet keys = psHist.getGeneratedKeys()) {
+                    if (!keys.next()) throw new SQLException("No se pudo obtener el recibo de pago generado.");
+                    receiptId = keys.getInt(1);
+                }
+            }
+
+            // 2. Procesar la cascada y guardar la asignación exacta por cuota.
             double dineroRestante = totalAmount;
+            List<Allocation> allocations = new ArrayList<>();
 
             try (PreparedStatement psUpPay = conn.prepareStatement(sqlUpdatePayment)) {
                 for (TempCuota cuota : cuotasPendientes) {
@@ -581,6 +605,7 @@ public class LoanDAOImpl implements LoanDAO {
 
                     // ✅ AGREGAMOS TOLERANCIA (+0.01) PARA ABSORBER ERRORES DE IMPRECISIÓN DE 'double'
                     if ((dineroRestante + 0.01) >= deudoCuota) {
+                        allocations.add(new Allocation(cuota.id, deudoCuota));
                         dineroRestante -= deudoCuota;
                         if (dineroRestante < 0) dineroRestante = 0; // Prevenimos residuos negativos por la tolerancia
 
@@ -589,6 +614,7 @@ public class LoanDAOImpl implements LoanDAO {
                         psUpPay.setInt(3, cuota.id);
                         psUpPay.addBatch();
                     } else {
+                        allocations.add(new Allocation(cuota.id, dineroRestante));
                         double nuevoPaidAmount = cuota.paidAmount + dineroRestante;
                         dineroRestante = 0;
 
@@ -605,7 +631,17 @@ public class LoanDAOImpl implements LoanDAO {
                 }
             }
 
-            // 4. Chequear si cerramos el préstamo completo
+            try (PreparedStatement psAllocation = conn.prepareStatement(sqlInsertAllocation)) {
+                for (Allocation allocation : allocations) {
+                    psAllocation.setInt(1, receiptId);
+                    psAllocation.setInt(2, allocation.paymentId);
+                    psAllocation.setDouble(3, allocation.amount);
+                    psAllocation.addBatch();
+                }
+                if (!allocations.isEmpty()) psAllocation.executeBatch();
+            }
+
+            // 3. Chequear si cerramos el préstamo completo
             int pendingCount = 0;
             try (PreparedStatement psCount = conn.prepareStatement(sqlCountPending)) {
                 psCount.setInt(1, loanId);
@@ -638,7 +674,33 @@ public class LoanDAOImpl implements LoanDAO {
     @Override
     public boolean revertLastPayment(int receiptId, int loanId, double amount, int targetInstallmentId) {
         String sqlDeleteReceipt = "DELETE FROM payment_history WHERE id = ?";
-        String sqlUpdateLoan = "UPDATE loans SET status = 'ACTIVE' WHERE id = ?";
+        String sqlUpdateLoan = "UPDATE loans SET status = 'ACTIVE' WHERE id = ? AND status = 'COMPLETED'";
+        String sqlSelectAllocations = """
+            SELECT lp.id, lp.paid_amount, pa.amount
+            FROM payment_allocations pa
+            JOIN loan_payments lp ON lp.id = pa.loan_payment_id
+            WHERE pa.receipt_id = ?
+            """;
+        String sqlUpdateAllocationPayment = """
+            UPDATE loan_payments
+            SET paid_amount = ?,
+                status = CASE
+                    WHEN ? >= amount THEN 'PAID'
+                    WHEN ? > 0 THEN 'PARTIAL'
+                    WHEN date(due_date) < date('now', 'localtime') THEN 'OVERDUE'
+                    ELSE 'PENDING'
+                END,
+                payment_date = CASE WHEN ? > 0 THEN payment_date ELSE NULL END
+            WHERE id = ?
+            """;
+        String sqlDeleteAllocations = "DELETE FROM payment_allocations WHERE receipt_id = ?";
+
+        class StoredAllocation {
+            int paymentId; double paidAmount; double allocatedAmount;
+            StoredAllocation(int paymentId, double paidAmount, double allocatedAmount) {
+                this.paymentId = paymentId; this.paidAmount = paidAmount; this.allocatedAmount = allocatedAmount;
+            }
+        }
 
         // Traemos todas las cuotas del préstamo que tengan algún pago, ordenadas de la ÚLTIMA a la PRIMERA
         String sqlSelectPaymentsToRevert = """
@@ -669,7 +731,44 @@ public class LoanDAOImpl implements LoanDAO {
             conn = DatabaseConfig.getConnection();
             conn.setAutoCommit(false); // 🔒 Transacción atómica
 
-            // 1. Borramos el recibo físico del historial
+            // Los recibos creados desde esta versión conocen exactamente qué
+            // cuotas afectaron. Se revierte esa distribución, sin inferirla.
+            List<StoredAllocation> allocations = new ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement(sqlSelectAllocations)) {
+                ps.setInt(1, receiptId);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) allocations.add(new StoredAllocation(
+                            rs.getInt("id"), rs.getDouble("paid_amount"), rs.getDouble("amount")));
+                }
+            }
+            if (!allocations.isEmpty()) {
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateAllocationPayment)) {
+                    for (StoredAllocation allocation : allocations) {
+                        double remainingPaid = Math.max(0, allocation.paidAmount - allocation.allocatedAmount);
+                        ps.setDouble(1, remainingPaid);
+                        ps.setDouble(2, remainingPaid);
+                        ps.setDouble(3, remainingPaid);
+                        ps.setDouble(4, remainingPaid);
+                        ps.setInt(5, allocation.paymentId);
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlDeleteAllocations)) {
+                    ps.setInt(1, receiptId); ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlDeleteReceipt)) {
+                    ps.setInt(1, receiptId); ps.executeUpdate();
+                }
+                try (PreparedStatement ps = conn.prepareStatement(sqlUpdateLoan)) {
+                    ps.setInt(1, loanId); ps.executeUpdate();
+                }
+                conn.commit();
+                return true;
+            }
+
+            // Recibos históricos no poseen asignaciones: se conserva la lógica
+            // anterior como compatibilidad retroactiva.
             try (PreparedStatement ps = conn.prepareStatement(sqlDeleteReceipt)) {
                 ps.setInt(1, receiptId);
                 ps.executeUpdate();
